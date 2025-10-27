@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { type CameraPTZConfig } from '../schemas/CameraPTZ'
-import Axis from '../libs/ptzRequests'
 
 export function usePTZ(camera: CameraPTZConfig) {
   const { data, isLoading, error } = useQuery({
@@ -12,10 +11,14 @@ export function usePTZ(camera: CameraPTZConfig) {
 }
 
 async function getPresets(camera: CameraPTZConfig) {
-  console.log(camera)
-  const axis = new Axis(camera.ip, camera.user, camera.password)
-  console.log(axis)
-  const info = await axis.ptz.info()
-  console.log(info)
-  return info
+  const response = await fetch(
+    `http://${camera.ip}:${camera.port}/axis-cgi/com/ptz.cgi?info=1&camera=1`,
+    {
+      headers: {
+        Authorization: `Basic ${btoa(`${camera.user}:${camera.password}`)}`
+      },
+      mode: 'no-cors'
+    }
+  )
+  return response.json()
 }
