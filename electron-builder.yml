@@ -16,12 +16,7 @@ win:
   executableName: transmission-control-app
   target: portable
 portable:
-  artifactName: transmission-control-app.${ext}
-# nsis:
-#   artifactName: ${name}-${version}-setup.${ext}
-#   shortcutName: ${productName}
-#   uninstallDisplayName: ${productName}
-#   createDesktopShortcut: always
+  artifactName: ${name}-${version}.${ext}
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
