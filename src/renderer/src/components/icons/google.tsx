@@ -6,7 +6,7 @@ export const GoogleIcon = forwardRef<SVGSVGElement, LucideProps>((props, ref) =>
     ref={ref}
     stroke="currentColor"
     fill="currentColor"
-    stroke-width="0"
+    strokeWidth="0"
     version="1.1"
     x="0px"
     y="0px"
