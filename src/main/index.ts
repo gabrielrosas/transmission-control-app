@@ -3,28 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-import fs from 'fs'
-
-// Log para builds portables
-try {
-  const logPath = join(process.cwd(), 'portable.log')
-  fs.appendFileSync(logPath, 'App starting...\n')
-
-  process.on('uncaughtException', (err) => {
-    fs.appendFileSync(logPath, `Uncaught Exception: ${err.stack || err}\n`)
-  })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  process.on('unhandledRejection', (err: any) => {
-    fs.appendFileSync(logPath, `Unhandled Rejection: ${err.stack || err}\n`)
-  })
-
-  app.on('ready', () => {
-    fs.appendFileSync(logPath, 'App ready event reached\n')
-  })
-} catch (e) {
-  console.error('Failed to set up portable logging:', e)
-}
+import { Cam } from 'onvif/promises'
 
 function createWindow(): void {
   // Create the browser window.
@@ -77,8 +56,33 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.handle('ptz:getPresets', async () => {
+    try {
+      const camera = {
+        id: '1',
+        name: 'Camera 1',
+        user: 'admin',
+        ip: '192.168.99.240',
+        port: '80',
+        password: 'clic3369'
+      }
+      console.log(camera)
+      const cam = new Cam({
+        username: camera.user,
+        password: camera.password,
+        hostname: camera.ip,
+        port: parseInt(camera.port)
+      })
+      console.log(cam)
+      await cam.connect()
+      const presets = await cam.getPresets()
+      console.log(presets)
+      return presets
+    } catch (error) {
+      console.error(error)
+      return []
+    }
+  })
 
   createWindow()
 
