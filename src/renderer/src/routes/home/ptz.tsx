@@ -1,5 +1,6 @@
 import { Content } from '@renderer/components/containers'
 import { GroupButton } from '@renderer/components/GroupButton'
+import { StatusTag } from '@renderer/components/Tag'
 import { Subtitle } from '@renderer/components/titles'
 import { useConfig } from '@renderer/hooks/config'
 import {
@@ -47,7 +48,13 @@ function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
       changeColapsed={changeColapsed}
     >
       <Content.Header size="small">
-        <Subtitle icon={Webcam}>{camera.name}</Subtitle>
+        <Subtitle
+          className="text-left"
+          icon={Webcam}
+          tag={<StatusTag isConnected={!isLoading && !error} isLoading={isLoading} />}
+        >
+          {camera.name}
+        </Subtitle>
       </Content.Header>
       <PTZControl control={control}>
         {isLoading ? (

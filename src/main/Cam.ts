@@ -111,7 +111,7 @@ class CamMock implements CamBase {
 export class CamStore {
   static cams: Record<string, CamBase> = {}
 
-  static async init(config: CameraPTZConfig) {
+  static async initCam(config: CameraPTZConfig) {
     try {
       if (CamStore.cams[config.id]) {
         if (!CamStore.cams[config.id].isConnected) {
@@ -129,7 +129,7 @@ export class CamStore {
     }
   }
 
-  static get(id: string) {
+  static getCam(id: string) {
     if (!CamStore.cams[id] || !CamStore.cams[id].isConnected) {
       throw new Error(`Camera ${id} not found`)
     }

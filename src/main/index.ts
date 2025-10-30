@@ -57,15 +57,15 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('ptz:init', async (_, config: CameraPTZConfig) => {
-    return CamStore.init(config)
+    return CamStore.initCam(config)
   })
 
   ipcMain.handle('ptz:getPresets', async (_, id: string) => {
-    return CamStore.get(id).getPresets()
+    return CamStore.getCam(id).getPresets()
   })
 
   ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
-    return CamStore.get(id).goto(preset)
+    return CamStore.getCam(id).goto(preset)
   })
 
   createWindow()

@@ -37,7 +37,9 @@ const deleteCameraToast = (promise: Promise<unknown>) =>
 export function PtzPage() {
   const cameraPTZConfig = useConfig((state) => state.config.cameraPTZConfig)
   const setConfig = useConfig((state) => state.setConfig)
-  const [selectedCamera, setSelectedCamera] = useState<CameraPTZConfig | null>(null)
+  const [selectedCamera, setSelectedCamera] = useState<CameraPTZConfig | null>(
+    Object.values(cameraPTZConfig)[0] || null
+  )
 
   const { mutate: addCamera, isPending: isAddingCamera } = useMutation({
     mutationFn: async () => {

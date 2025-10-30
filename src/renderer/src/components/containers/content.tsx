@@ -92,18 +92,14 @@ export function Header({ children, className, border, ...props }: HeaderProps) {
             ...props,
             border: colapsed === undefined ? border : !colapsed
           }),
-          'cursor-pointer relative',
+          'cursor-pointer flex flex-row items-center gap-2',
           { 'opacity-40': colapsed === true },
           className
         )}
       >
-        {children}
-        {colapsed === true && (
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-6" />
-        )}
-        {colapsed === false && (
-          <ChevronUp className="absolute right-2 top-1/2 -translate-y-1/2 size-6" />
-        )}
+        <div className="grow">{children}</div>
+        {colapsed === true && <ChevronDown className="size-6" />}
+        {colapsed === false && <ChevronUp className="size-6" />}
       </button>
     )
   }

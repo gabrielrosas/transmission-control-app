@@ -16,15 +16,16 @@ export function ObsCard() {
 
   return (
     <Content.Container className="w-full">
-      <Content.Header size="small" border={!isLoading}>
+      <Content.Header size="small" border={!isLoading && isConnected}>
         <Subtitle
           icon={OBSIcon}
+          className="text-left"
           tag={<StatusTag isConnected={isConnected} isLoading={isLoading} />}
         >
           OBS
         </Subtitle>
       </Content.Header>
-      {!isLoading && (
+      {!isLoading && isConnected && (
         <Content.Content className="grid grid-cols-2 gap-2 p-2">
           {scenes.map((scene) => (
             <SceneButtons
