@@ -61,8 +61,8 @@ function SignUpSignIn() {
 
   return (
     <div className="h-screen w-screen flex items-center justify-center">
-      <div>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 w-[400px]">
+      <div className="max-w-[400px] w-full p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <h2 className="text-2xl font-bold">{action === 'sign-in' ? 'Login' : 'Criar conta'}</h2>
           <TextField
             placeholder="Email"
@@ -118,11 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return <Loading />
   }
   if (!isSignedIn) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <SignUpSignIn />
-      </div>
-    )
+    return <SignUpSignIn />
   }
 
   if (!configLoad) {

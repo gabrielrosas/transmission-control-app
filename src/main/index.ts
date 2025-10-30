@@ -65,7 +65,6 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
-    console.log('goto1', { id, preset })
     return CamStore.get(id).goto(preset)
   })
 

@@ -24,16 +24,25 @@ export const PTZContext = createContext<PTZContextType>({
 
 export function useInitPTZ(config: CameraPTZConfig) {
   const [inProgress, setInProgress] = useState<boolean>(false)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['ptz', config.id],
+    retry: 3,
     queryFn: () => window.ptz.init(config)
   })
+
+  console.log('useInitPTZ', { config, data, isLoading, error })
 
   const presets = useMemo(() => {
     return data?.slice(0, config.presetLimit || 100) || []
   }, [config, data])
 
-  return { control: { config, presets, inProgress, setInProgress }, isLoading, presets, inProgress }
+  return {
+    control: { config, presets, inProgress, setInProgress },
+    isLoading,
+    presets,
+    inProgress,
+    error
+  }
 }
 
 export function useGotoPTZ(preset: PTZPreset) {

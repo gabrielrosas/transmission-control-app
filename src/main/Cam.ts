@@ -7,7 +7,6 @@ export type CameraPTZConfig = {
   ip: string
   port: string
   password: string
-  sceneId?: string | null | undefined
 }
 
 interface CamBase {
@@ -17,12 +16,13 @@ interface CamBase {
   connect: () => Promise<void>
 }
 
-const isDev = false
+const isDev = true
 
 export class Cam implements CamBase {
   private cam: OnvifCam
   private config: CameraPTZConfig
   isConnected: boolean = false
+  presets: { id: string; name: string }[] | undefined = undefined
 
   constructor(config: CameraPTZConfig) {
     this.config = config
@@ -47,13 +47,16 @@ export class Cam implements CamBase {
 
   async getPresets() {
     try {
-      const presets: Record<string, { name: string; ['$']: { token: number } }> =
-        await this.cam.getPresets()
+      if (this.presets !== undefined) {
+        return this.presets
+      }
+      const presets: Record<string, { name: string }> = await this.cam.getPresets()
 
-      return Object.entries(presets).map(([id, preset]) => ({
+      this.presets = Object.entries(presets).map(([id, preset]) => ({
         id,
         name: preset.name
       }))
+      return this.presets
     } catch (error) {
       console.error(error)
       throw error
@@ -72,7 +75,12 @@ export class Cam implements CamBase {
 
 class CamMock implements CamBase {
   isConnected: boolean = true
-  constructor() {
+  error: boolean = false
+
+  constructor(config: CameraPTZConfig) {
+    if (config.ip === '0.0.0.0') {
+      this.error = true
+    }
     this.isConnected = false
   }
   async getPresets() {
@@ -91,6 +99,11 @@ class CamMock implements CamBase {
     console.log('goto mock done', preset)
   }
   async connect() {
+    if (this.error) {
+      const error = new Error('Error connecting to camera')
+      console.error(error)
+      throw error
+    }
     this.isConnected = true
   }
 }
@@ -106,7 +119,7 @@ export class CamStore {
         }
         return CamStore.cams[config.id].getPresets()
       }
-      const cam = isDev ? new CamMock() : new Cam(config)
+      const cam = isDev ? new CamMock(config) : new Cam(config)
       CamStore.cams[config.id] = cam
       await cam.connect()
       return cam.getPresets()

@@ -33,8 +33,7 @@ type PtzCardProps = {
   changeColapsed: () => void
 }
 function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
-  const { presets, isLoading, control, inProgress } = useInitPTZ(camera)
-  console.log({ presets, isLoading })
+  const { presets, isLoading, control, inProgress, error } = useInitPTZ(camera)
   return (
     <Content.Container
       className={cn({ 'grow min-h-0': selected })}
@@ -51,11 +50,25 @@ function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
           </Content.Content>
         ) : (
           <Content.Content className="p-0 grow min-h-0">
-            <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto">
-              {presets.map((preset) => (
-                <Preset key={preset.id} preset={preset} inProgress={inProgress} />
-              ))}
-            </div>
+            {error ? (
+              <div className="p-4 flex flex-col items-center justify-center w-full h-full gap-4">
+                <ul className="w-full border border-border rounded-md p-2 text-sm opacity-50">
+                  <li className="text-center">IP: {camera.ip}</li>
+                  <li className="text-center">Porta: {camera.port}</li>
+                  <li className="text-center">Usuário: {camera.user}</li>
+                  <li className="text-center">Senha: {camera.password}</li>
+                </ul>
+                <p className="text-error text-sm text-center w-full p-4 bg-error/10 rounded-md">
+                  Erro ao conectar à câmera: {error.message}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto">
+                {presets.map((preset) => (
+                  <Preset key={preset.id} preset={preset} inProgress={inProgress} />
+                ))}
+              </div>
+            )}
           </Content.Content>
         )}
       </PTZControl>

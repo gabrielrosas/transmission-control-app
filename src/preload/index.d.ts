@@ -7,7 +7,6 @@ type CameraPTZConfig = {
   ip: string
   port: string
   password: string
-  sceneId?: string | null | undefined
 }
 declare global {
   interface Window {

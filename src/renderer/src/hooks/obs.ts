@@ -130,7 +130,7 @@ class OBSConnectionStore {
   }
 }
 
-export const useOBS = create<OBSState & OBSActions>((set) => ({
+export const useOBS = create<OBSState & OBSActions>((set, get) => ({
   config: null,
   isLoading: false,
   isConnected: false,
@@ -139,14 +139,18 @@ export const useOBS = create<OBSState & OBSActions>((set) => ({
   previewScene: null,
   setState: (data) => set({ ...data }),
   changeProgramScene: async (sceneId: string) => {
-    await OBSConnectionStore.get().call('SetCurrentProgramScene', {
-      sceneUuid: sceneId
-    })
+    if (get().isConnected) {
+      await OBSConnectionStore.get().call('SetCurrentProgramScene', {
+        sceneUuid: sceneId
+      })
+    }
   },
   changePreviewScene: async (sceneId: string) => {
-    await OBSConnectionStore.get().call('SetCurrentPreviewScene', {
-      sceneUuid: sceneId
-    })
+    if (get().isConnected) {
+      await OBSConnectionStore.get().call('SetCurrentPreviewScene', {
+        sceneUuid: sceneId
+      })
+    }
   }
 }))
 

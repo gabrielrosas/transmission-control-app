@@ -50,11 +50,11 @@ export function PtzPage() {
             port: '',
             user: '',
             password: '',
-            transitionTime: 0,
+            transitionTime: null,
+            presetLimit: null,
             sceneId: null,
             axSceneId: null
           }
-          console.log(newCamera)
           await setConfig({ cameraPTZConfig: { ...cameraPTZConfig, [newCamera.id]: newCamera } })
           setSelectedCamera(newCamera)
         })()
