@@ -47,26 +47,25 @@ export function useInitPTZ(config: CameraPTZConfig) {
   }
 }
 
-export function useGotoPTZ(preset: PTZPreset, preview: boolean = false) {
+export function useGotoPTZ(preset: PTZPreset, onlyPreview: boolean = false) {
   const { config, setInProgress } = useContext(PTZContext)
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
-  const previewScene = useOBS((state) => state.previewScene)
+  const programScene = useOBS((state) => state.programScene)
   const { mutate: gotoPreset, isPending: isGotoPending } = useMutation({
     mutationFn: async () => {
       if (config) {
         setInProgress(true)
-        if (preview && config.sceneId) {
-          if (previewScene?.id === config.sceneId && config.axSceneId) {
+        if (config.sceneId) {
+          if (programScene?.id === config.sceneId && config.axSceneId) {
             await changeProgramScene(config.axSceneId)
           }
           await changePreviewScene(config.sceneId)
           await window.ptz.goto({ id: config.id, preset: preset.id })
-        } else if (!preview && config.axSceneId && config.sceneId) {
-          await changeProgramScene(config.axSceneId)
-          await window.ptz.goto({ id: config.id, preset: preset.id })
-          await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
-          await changeProgramScene(config.sceneId)
+          if (!onlyPreview) {
+            await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
+            await changeProgramScene(config.sceneId)
+          }
         } else {
           await window.ptz.goto({ id: config.id, preset: preset.id })
         }
