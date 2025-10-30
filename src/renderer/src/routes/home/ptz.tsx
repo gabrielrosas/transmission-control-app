@@ -2,10 +2,16 @@ import { Content } from '@renderer/components/containers'
 import { GroupButton } from '@renderer/components/GroupButton'
 import { Subtitle } from '@renderer/components/titles'
 import { useConfig } from '@renderer/hooks/config'
-import { PTZControl, PTZPreset, useInitPTZ, useGotoPTZ } from '@renderer/hooks/ptz'
+import {
+  PTZControl,
+  PTZPreset,
+  useInitPTZ,
+  useGotoPTZ,
+  useGotoPTZPreview
+} from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
-import { Loader2, Webcam, Eye } from 'lucide-react'
+import { Loader2, Webcam, Eye, Play } from 'lucide-react'
 import { useState } from 'react'
 
 export function PtzCards() {
@@ -78,22 +84,25 @@ function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
 
 function Preset({ preset, inProgress }: { preset: PTZPreset; inProgress: boolean }) {
   const { gotoPreset, isLoading } = useGotoPTZ(preset)
+  const { gotoPreset: gotoPresetPreview, isLoading: isLoadingPreview } = useGotoPTZPreview(preset)
   return (
     <GroupButton.Container>
       <GroupButton.Button
-        onClick={() => gotoPreset(true)}
-        variant={isLoading ? 'successOutline' : 'default'}
+        icon={Eye}
+        onClick={() => gotoPresetPreview()}
+        variant={isLoadingPreview ? 'successOutline' : 'default'}
         disabled={inProgress}
+        isLoading={isLoadingPreview}
         className="grow"
       >
         {preset.name}
       </GroupButton.Button>
       <GroupButton.Button
-        onClick={() => gotoPreset(false)}
+        onClick={() => gotoPreset()}
         variant={isLoading ? 'successOutline' : 'default'}
         disabled={inProgress}
       >
-        {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
+        {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
       </GroupButton.Button>
     </GroupButton.Container>
   )

@@ -45,18 +45,18 @@ export function useInitPTZ(config: CameraPTZConfig) {
   }
 }
 
-export function useGotoPTZ(preset: PTZPreset) {
+export function useGotoPTZ(preset: PTZPreset, preview: boolean = false) {
   const { config, setInProgress } = useContext(PTZContext)
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
   const { mutate: gotoPreset, isPending: isGotoPending } = useMutation({
-    mutationFn: async (changeScene: boolean) => {
+    mutationFn: async () => {
       if (config) {
         setInProgress(true)
-        if (!changeScene && config.sceneId) {
+        if (preview && config.sceneId) {
           await changePreviewScene(config.sceneId)
           await window.ptz.goto({ id: config.id, preset: preset.id })
-        } else if (changeScene && config.axSceneId && config.sceneId) {
+        } else if (!preview && config.axSceneId && config.sceneId) {
           await changeProgramScene(config.axSceneId)
           await window.ptz.goto({ id: config.id, preset: preset.id })
           await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
@@ -70,4 +70,8 @@ export function useGotoPTZ(preset: PTZPreset) {
   })
 
   return { gotoPreset, isLoading: isGotoPending }
+}
+
+export function useGotoPTZPreview(preset: PTZPreset) {
+  return useGotoPTZ(preset, true)
 }

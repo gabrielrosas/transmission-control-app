@@ -16,7 +16,7 @@ interface CamBase {
   connect: () => Promise<void>
 }
 
-const isDev = true
+const isDev = false
 
 export class Cam implements CamBase {
   private cam: OnvifCam
