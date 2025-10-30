@@ -1,4 +1,4 @@
-import { Eye, Loader2, Play, RefreshCcw } from 'lucide-react'
+import { Eye, Loader2, Play, RefreshCcw, TvMinimalPlay } from 'lucide-react'
 import { Content } from '../../components/containers'
 import { OBSIcon } from '../../components/icons/obs'
 import { StatusTag } from '../../components/Tag'
@@ -6,11 +6,13 @@ import { Subtitle } from '../../components/titles'
 import { OBSScene, useOBS } from '../../hooks/obs'
 import { GroupButton } from '@renderer/components/GroupButton'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { cn } from '@renderer/libs/cn'
+import { useConfig } from '@renderer/hooks/config'
 
 export function ObsCard() {
   const isConnected = useOBS((state) => state.isConnected)
+  const obsConfig = useConfig((state) => state.config.obsConfig!)
   const isLoading = useOBS((state) => state.isLoading)
   const scenes = useOBS((state) => state.scenes)
   const programScene = useOBS((state) => state.programScene)
@@ -22,6 +24,10 @@ export function ObsCard() {
       await reloadScenes()
     }
   })
+
+  const scenesToShow = useMemo(() => {
+    return scenes.filter((scene) => !(obsConfig?.ignoreSceneList || []).includes(scene.id))
+  }, [scenes, obsConfig?.ignoreSceneList])
 
   const [colapsed, setColapsed] = useState(false)
 
@@ -41,7 +47,6 @@ export function ObsCard() {
               <div
                 className="cursor-pointer opacity-50 hover:opacity-100"
                 onClick={(event) => {
-                  console.log('click')
                   event.preventDefault()
                   event.stopPropagation()
                   reloadScenesMutation()
@@ -59,7 +64,7 @@ export function ObsCard() {
       </Content.Header>
       {!isLoading && isConnected && (
         <Content.Content className="grid grid-cols-2 gap-2 p-2">
-          {scenes
+          {scenesToShow
             .sort((a, b) => (b.order || 0) - (a.order || 0))
             .map((scene) => (
               <SceneButtons
@@ -110,10 +115,13 @@ function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsPro
       </GroupButton.Button>
       <GroupButton.Button
         onClick={() => changeProgramSceneMutation()}
-        variant={isProgramScene ? 'error' : isPreviewScene ? 'successOutline' : 'defaultOutline'}
+        variant={isProgramScene ? 'error' : 'errorOutline'}
+        disabled={isChangingProgramScene || isProgramScene}
       >
         {isChangingProgramScene ? (
           <Loader2 className="size-4 animate-spin" />
+        ) : isProgramScene ? (
+          <TvMinimalPlay className="size-4" />
         ) : (
           <Play className="size-4" />
         )}

@@ -30,8 +30,6 @@ export function useInitPTZ(config: CameraPTZConfig) {
     queryFn: () => window.ptz.init(config)
   })
 
-  console.log('useInitPTZ', { config, data, isFetching, isRefetching, error })
-
   const presets = useMemo(() => {
     return data?.slice(0, config.presetLimit || 100) || []
   }, [config, data])

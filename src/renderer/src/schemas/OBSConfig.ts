@@ -19,7 +19,8 @@ export const OBSConfigSchema = z.object({
   password: z
     .string()
     .min(1, 'Senha é obrigatória')
-    .min(4, 'Senha deve ter pelo menos 4 caracteres')
+    .min(4, 'Senha deve ter pelo menos 4 caracteres'),
+  ignoreSceneList: z.array(z.string()).nullable().optional()
 })
 
 export type OBSConfig = z.infer<typeof OBSConfigSchema>

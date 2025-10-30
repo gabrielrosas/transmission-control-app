@@ -5,7 +5,7 @@ import { cn } from '../libs/cn'
 import { useMemo } from 'react'
 
 const buttonVariants = cva(
-  'flex flex-row items-center justify-center gap-1 text-sm outline-none disabled:pointer-events-none disabled:opacity-50 p-2 cursor-pointer',
+  'flex flex-row items-center justify-center gap-1 text-sm outline-none disabled:!pointer-events-none disabled:opacity-50 p-2 cursor-pointer',
   {
     variants: {
       variant: {
@@ -15,8 +15,10 @@ const buttonVariants = cva(
         primary: 'bg-primary text-primary-foreground  border border-primary hover:bg-primary-hover',
         success: 'bg-success text-white border border-success hover:bg-success-hover',
         successOutline: 'bg-secondary text-success border border-success hover:bg-success/20',
-        error: 'bg-error text-white hover:bg-error-hover border border-error',
-        errorOutline: 'bg-secondary text-error border border-error hover:bg-error/20',
+        error:
+          'bg-error text-white hover:bg-error-hover border border-error disabled:opacity-100 disabled:cursor-not-allowed',
+        errorOutline:
+          'bg-secondary text-error border border-error hover:bg-error/20 disabled:cursor-not-allowed',
         nav: 'rounded-none hover:bg-background-hover self-stretch'
       },
       rounded: {

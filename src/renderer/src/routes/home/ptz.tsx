@@ -58,7 +58,6 @@ function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
               <div
                 className="cursor-pointer opacity-50 hover:opacity-100"
                 onClick={(event) => {
-                  console.log('click')
                   event.preventDefault()
                   event.stopPropagation()
                   refetch()
@@ -115,7 +114,7 @@ function Preset({ preset, inProgress }: { preset: PTZPreset; inProgress: boolean
       <GroupButton.Button
         icon={Eye}
         onClick={() => gotoPresetPreview()}
-        variant={isLoadingPreview ? 'successOutline' : 'default'}
+        variant={isLoadingPreview ? 'successOutline' : 'defaultOutline'}
         disabled={inProgress}
         isLoading={isLoadingPreview}
         className="grow gap-2"
@@ -126,7 +125,7 @@ function Preset({ preset, inProgress }: { preset: PTZPreset; inProgress: boolean
       </GroupButton.Button>
       <GroupButton.Button
         onClick={() => gotoPreset()}
-        variant={isLoading ? 'successOutline' : 'default'}
+        variant={'errorOutline'}
         disabled={inProgress}
       >
         {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}

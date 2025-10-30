@@ -62,7 +62,6 @@ class OBSConnectionStore {
           console.log('Connected to OBS')
           delay(2000).then(() => {
             OBSConnectionStore.connection!.call('GetSceneList').then((scenes) => {
-              console.log('scenes', scenes)
               setState({
                 isLoading: false,
                 isConnected: true,
@@ -110,7 +109,6 @@ class OBSConnectionStore {
           })
         })
         .on('SceneListChanged', (data) => {
-          console.log('SceneListChanged', data)
           setState({
             scenes: data.scenes.map((scene) => ({
               order: scene.sceneIndex as number,
@@ -164,7 +162,6 @@ export const useOBS = create<OBSState & OBSActions>((set, get) => ({
   },
   reloadScenes: async () => {
     const config = get().config
-    console.log('reloadScenes', config)
     if (!get().isConnected && config) {
       await OBSConnectionStore.init(config, set, true)
     } else {
