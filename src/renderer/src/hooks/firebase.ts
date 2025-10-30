@@ -40,15 +40,11 @@ export const useAuth = create<AuthState>((set) => ({
   user: null,
   isLoad: false,
   load: async () => {
-    console.log('load')
     const auth = getAuth()
     await new Promise((resolve) => setTimeout(resolve, 1000))
-    console.log('load2')
     if (auth.currentUser) {
-      console.log('load3')
       set({ user: auth.currentUser, isLoad: true })
     } else {
-      console.log('load4')
       set({ user: null, isLoad: true })
     }
   },

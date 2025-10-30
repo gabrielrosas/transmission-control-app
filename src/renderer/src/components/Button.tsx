@@ -61,7 +61,7 @@ const buttonIconVariants = cva('', {
   }
 })
 
-type ButtonProps = {
+export type ButtonProps = {
   asChild?: boolean
   icon?: LucideIcon
   secondaryIcon?: LucideIcon
@@ -78,6 +78,7 @@ export function Button({
   className,
   asChild,
   variant,
+  rounded,
   full,
   size,
   ...props
@@ -103,7 +104,7 @@ export function Button({
 
   return (
     <Comp
-      className={cn(buttonVariants({ variant, full, size }), className)}
+      className={cn(buttonVariants({ variant, full, size, rounded }), className)}
       disabled={isLoading || disabled}
       {...props}
     >

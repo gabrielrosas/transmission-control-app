@@ -54,7 +54,6 @@ export function useConfigInit() {
       doc(db, 'configs', user.uid),
       (doc) => {
         const config = doc.data() as Config | undefined
-        console.log('onSnapshot', config)
         if (config) {
           setContextConfig(config)
         } else {

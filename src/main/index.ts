@@ -1,15 +1,15 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-import { Cam } from 'onvif/promises'
+import { CameraPTZConfig, CamStore } from './Cam'
 
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 400,
+    height: screen.getPrimaryDisplay().workAreaSize.height,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -56,32 +56,17 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  ipcMain.handle('ptz:getPresets', async () => {
-    try {
-      const camera = {
-        id: '1',
-        name: 'Camera 1',
-        user: 'admin',
-        ip: '192.168.99.240',
-        port: '80',
-        password: 'clic3369'
-      }
-      console.log(camera)
-      const cam = new Cam({
-        username: camera.user,
-        password: camera.password,
-        hostname: camera.ip,
-        port: parseInt(camera.port)
-      })
-      console.log(cam)
-      await cam.connect()
-      const presets = await cam.getPresets()
-      console.log(presets)
-      return presets
-    } catch (error) {
-      console.error(error)
-      return []
-    }
+  ipcMain.handle('ptz:init', async (_, config: CameraPTZConfig) => {
+    return CamStore.init(config)
+  })
+
+  ipcMain.handle('ptz:getPresets', async (_, id: string) => {
+    return CamStore.get(id).getPresets()
+  })
+
+  ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
+    console.log('goto1', { id, preset })
+    return CamStore.get(id).goto(preset)
   })
 
   createWindow()

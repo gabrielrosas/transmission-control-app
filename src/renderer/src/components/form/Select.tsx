@@ -20,14 +20,22 @@ const textFieldVariants = cva('appearance-none', {
 })
 
 type TextFieldProps = {
+  containerClassName?: string
   error?: boolean
   options: { label: string; value: string }[]
 } & VariantProps<typeof textFieldVariants> &
   React.SelectHTMLAttributes<HTMLSelectElement>
 
-export function Select({ className, variant, error, options, ...props }: TextFieldProps) {
+export function Select({
+  containerClassName,
+  className,
+  variant,
+  error,
+  options,
+  ...props
+}: TextFieldProps) {
   return (
-    <div className="relative">
+    <div className={cn(containerClassName, 'relative')}>
       <select {...props} className={cn(textFieldVariants({ variant, error }), className)}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>

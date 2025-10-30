@@ -9,7 +9,7 @@ import { useAuth } from '../../hooks/firebase'
 export function SettingsLayout() {
   const signOut = useAuth((state) => state.signOut)
   return (
-    <Page.Container>
+    <Page.Container className="h-full">
       <nav className="fixed bg-background top-0 left-0 w-screen flex items-center border-b border-border">
         <Button asChild icon={HouseIcon} variant="nav">
           <Link to="/"></Link>
@@ -27,9 +27,9 @@ export function SettingsLayout() {
           <LogOut size={16} />
         </Button>
       </nav>
-      <div className="mt-[50px] p-4 flex flex-col items-center min-h-[calc(100vh-50px)]">
+      <main className="p-4 pt-[50px] h-full flex flex-col items-center ">
         <Outlet />
-      </div>
+      </main>
     </Page.Container>
   )
 }

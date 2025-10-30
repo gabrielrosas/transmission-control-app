@@ -4,9 +4,9 @@ import { Page } from '../components/containers'
 
 export function HomeLayout() {
   return (
-    <Page.Container>
+    <Page.Container className="h-full">
       <SettingsBtn />
-      <main className="p-4">
+      <main className="p-2 pt-[40px] h-full">
         <Outlet />
       </main>
     </Page.Container>

@@ -49,7 +49,10 @@ export function PtzPage() {
             ip: '',
             port: '',
             user: '',
-            password: ''
+            password: '',
+            transitionTime: 0,
+            sceneId: null,
+            axSceneId: null
           }
           console.log(newCamera)
           await setConfig({ cameraPTZConfig: { ...cameraPTZConfig, [newCamera.id]: newCamera } })
@@ -84,46 +87,44 @@ export function PtzPage() {
     [cameraPTZConfig, setConfig]
   )
   return (
-    <Content.Container hFull>
+    <Content.Container className="h-full">
       <Content.Header>
         <Title icon={WebcamIcon}>PTZ</Title>
       </Content.Header>
-      <Content.Content>
-        <div className="flex flex-row gap-2 w-full min-h-full">
-          <div className="w-[250px] flex flex-col gap-2">
-            {Object.values(cameraPTZConfig).map((camera) => (
-              <Button
-                full
-                variant={selectedCamera?.id === camera.id ? 'success' : 'defaultOutline'}
-                key={camera.id}
-                type="button"
-                onClick={() => setSelectedCamera(camera)}
-                icon={WebcamIcon}
-              >
-                {camera.name || 'nova da câmera'}
-              </Button>
-            ))}
+      <Content.Content className="grow min-h-0 overflow-auto">
+        <div className="flex flex-col gap-2 w-full min-h-full">
+          <div className="w-full flex flex-row gap-2">
+            <Select
+              containerClassName="flex-1"
+              options={[
+                { label: 'Selecione uma câmera', value: '' },
+                ...Object.values(cameraPTZConfig).map((camera) => ({
+                  label: camera.name,
+                  value: camera.id
+                }))
+              ]}
+              value={selectedCamera?.id}
+              onChange={(e) => {
+                const value = e.target.value
+                setSelectedCamera(cameraPTZConfig[value])
+              }}
+            />
             <Button
-              full
-              icon={Plus}
               variant="primary"
               onClick={() => addCamera()}
               type="button"
               isLoading={isAddingCamera}
             >
-              Adicionar câmera
+              <Plus />
             </Button>
           </div>
-          <div className="w-[2px] bg-border"></div>
-          <div className="flex-1 min-h-[50vh]">
-            {selectedCamera && (
-              <FormCamera
-                camera={selectedCamera}
-                saveCamera={saveCamera}
-                deleteCamera={deleteCamera}
-              />
-            )}
-          </div>
+          {selectedCamera && (
+            <FormCamera
+              camera={selectedCamera}
+              saveCamera={saveCamera}
+              deleteCamera={deleteCamera}
+            />
+          )}
         </div>
       </Content.Content>
     </Content.Container>
@@ -146,7 +147,7 @@ function FormCamera({
     handleSubmit,
     reset,
     formState: { errors }
-  } = useForm<CameraPTZConfig>({
+  } = useForm({
     resolver: zodResolver(CameraPTZConfigSchema),
     defaultValues: camera
   })
@@ -183,6 +184,15 @@ function FormCamera({
       <FormControl label="Senha da câmera" error={errors.password?.message}>
         <TextField {...register('password')} type="text" placeholder="Senha da câmera" />
       </FormControl>
+      <FormControl label="Limite de presets" error={errors.presetLimit?.message}>
+        <TextField
+          {...register('presetLimit')}
+          type="number"
+          placeholder="Limite de presets da câmera"
+          min={1}
+          max={100}
+        />
+      </FormControl>
       <FormControl label="Cena do OBS" error={errors.sceneId?.message}>
         <Select
           options={[
@@ -190,6 +200,24 @@ function FormCamera({
             ...scenes.map((scene) => ({ label: scene.name, value: scene.id }))
           ]}
           {...register('sceneId')}
+        />
+      </FormControl>
+      <FormControl label="Cena auxiliar do OBS" error={errors.axSceneId?.message}>
+        <Select
+          options={[
+            { label: 'Selecione uma cena', value: '' },
+            ...scenes.map((scene) => ({ label: scene.name, value: scene.id }))
+          ]}
+          {...register('axSceneId')}
+        />
+      </FormControl>
+      <FormControl label="Tempo de transição (ms)" error={errors.transitionTime?.message}>
+        <TextField
+          {...register('transitionTime')}
+          type="number"
+          placeholder="Tempo de transição"
+          min={0}
+          max={10000}
         />
       </FormControl>
       <div className="flex justify-end gap-4">

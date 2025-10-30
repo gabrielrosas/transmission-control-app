@@ -16,8 +16,8 @@ export function ObsCard() {
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
 
   return (
-    <Content.Container className="w-[300px]">
-      <Content.Header size="small">
+    <Content.Container className="w-full">
+      <Content.Header size="small" border={!isLoading}>
         <Subtitle
           icon={OBSIcon}
           tag={<StatusTag isConnected={isConnected} isLoading={isLoading} />}
@@ -25,27 +25,33 @@ export function ObsCard() {
           OBS
         </Subtitle>
       </Content.Header>
-      <Content.Content className="flex flex-col gap-2">
-        {scenes.map((scene) => (
-          <Button
-            key={scene.id}
-            onClick={() => changeProgramScene(scene.id)}
-            full
-            variant={
-              programScene?.id === scene.id
-                ? 'error'
-                : previewScene?.id === scene.id
-                  ? 'successOutline'
-                  : 'defaultOutline'
-            }
-            secondaryIcon={
-              programScene?.id === scene.id ? Play : previewScene?.id === scene.id ? Eye : undefined
-            }
-          >
-            {scene.name}
-          </Button>
-        ))}
-      </Content.Content>
+      {!isLoading && (
+        <Content.Content className="grid grid-cols-2 gap-2 p-2">
+          {scenes.map((scene) => (
+            <Button
+              key={scene.id}
+              onClick={() => changeProgramScene(scene.id)}
+              full
+              variant={
+                programScene?.id === scene.id
+                  ? 'error'
+                  : previewScene?.id === scene.id
+                    ? 'successOutline'
+                    : 'defaultOutline'
+              }
+              secondaryIcon={
+                programScene?.id === scene.id
+                  ? Play
+                  : previewScene?.id === scene.id
+                    ? Eye
+                    : undefined
+              }
+            >
+              {scene.name}
+            </Button>
+          ))}
+        </Content.Content>
+      )}
     </Content.Container>
   )
 }
