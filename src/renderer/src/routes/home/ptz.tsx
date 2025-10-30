@@ -12,7 +12,7 @@ import {
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
-import { Loader2, Webcam, Eye, Play } from 'lucide-react'
+import { Loader2, Webcam, Eye, Play, RefreshCcw } from 'lucide-react'
 import { useState } from 'react'
 
 export function PtzCards() {
@@ -40,7 +40,8 @@ type PtzCardProps = {
   changeColapsed: () => void
 }
 function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
-  const { presets, isLoading, control, inProgress, error } = useInitPTZ(camera)
+  const { presets, isLoading, control, inProgress, isRefetching, error, refetch } =
+    useInitPTZ(camera)
   return (
     <Content.Container
       className={cn({ 'grow min-h-0': selected })}
@@ -52,6 +53,23 @@ function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
           className="text-left"
           icon={Webcam}
           tag={<StatusTag isConnected={!isLoading && !error} isLoading={isLoading} />}
+          action={
+            !isLoading ? (
+              <div
+                className="cursor-pointer opacity-50 hover:opacity-100"
+                onClick={(event) => {
+                  console.log('click')
+                  event.preventDefault()
+                  event.stopPropagation()
+                  refetch()
+                }}
+              >
+                <RefreshCcw
+                  className={cn('size-4 cursor-pointer', isRefetching ? 'animate-spin' : '')}
+                />
+              </div>
+            ) : undefined
+          }
         >
           {camera.name}
         </Subtitle>
@@ -76,7 +94,7 @@ function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto">
+              <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto no-scrollbar">
                 {presets.map((preset) => (
                   <Preset key={preset.id} preset={preset} inProgress={inProgress} />
                 ))}
@@ -100,9 +118,11 @@ function Preset({ preset, inProgress }: { preset: PTZPreset; inProgress: boolean
         variant={isLoadingPreview ? 'successOutline' : 'default'}
         disabled={inProgress}
         isLoading={isLoadingPreview}
-        className="grow"
+        className="grow gap-2"
       >
-        {preset.name}
+        <div className="grow max-w-[100px] h-[40px] text-left overflow-hidden text-ellipsis flex items-center">
+          {preset.name.length > 20 ? preset.name.slice(0, 20) + '...' : preset.name}
+        </div>
       </GroupButton.Button>
       <GroupButton.Button
         onClick={() => gotoPreset()}

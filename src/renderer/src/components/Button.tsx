@@ -5,7 +5,7 @@ import { cn } from '../libs/cn'
 import { useMemo } from 'react'
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1 text-sm outline-none disabled:pointer-events-none disabled:opacity-50 p-2 cursor-pointer',
+  'flex flex-row items-center justify-center gap-1 text-sm outline-none disabled:pointer-events-none disabled:opacity-50 p-2 cursor-pointer',
   {
     variants: {
       variant: {

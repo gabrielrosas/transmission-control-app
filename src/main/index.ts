@@ -7,9 +7,13 @@ import { CameraPTZConfig, CamStore } from './Cam'
 
 function createWindow(): void {
   // Create the browser window.
+
+  const width = 400
   const mainWindow = new BrowserWindow({
-    width: 400,
+    width,
     height: screen.getPrimaryDisplay().workAreaSize.height,
+    x: screen.getPrimaryDisplay().workAreaSize.width - width,
+    y: 0,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),

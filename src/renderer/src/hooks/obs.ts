@@ -8,6 +8,7 @@ import { create } from 'zustand'
 export type OBSScene = {
   name: string
   id: string
+  order?: number
 }
 
 export type OBSState = {
@@ -22,6 +23,7 @@ export type OBSActions = {
   setState: (data: Partial<OBSState>) => void
   changeProgramScene: (sceneId: string) => Promise<void>
   changePreviewScene: (sceneId: string) => Promise<void>
+  reloadScenes: () => Promise<void>
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -37,8 +39,12 @@ class OBSConnectionStore {
     throw new Error('Not connected to OBS')
   }
 
-  static async init(config: OBSConfig, setState: (state: Partial<OBSState>) => void) {
-    if (OBSConnectionStore.config != null && OBSConnectionStore.config != config) {
+  static async init(
+    config: OBSConfig,
+    setState: (state: Partial<OBSState>) => void,
+    force: boolean = false
+  ) {
+    if ((OBSConnectionStore.config != null && OBSConnectionStore.config != config) || force) {
       await OBSConnectionStore.disconnect(setState)
     }
 
@@ -56,10 +62,12 @@ class OBSConnectionStore {
           console.log('Connected to OBS')
           delay(2000).then(() => {
             OBSConnectionStore.connection!.call('GetSceneList').then((scenes) => {
+              console.log('scenes', scenes)
               setState({
                 isLoading: false,
                 isConnected: true,
                 scenes: scenes.scenes.map((scene) => ({
+                  order: scene.sceneIndex as number,
                   name: scene.sceneName as string,
                   id: scene.sceneUuid as string
                 })),
@@ -102,9 +110,11 @@ class OBSConnectionStore {
           })
         })
         .on('SceneListChanged', (data) => {
+          console.log('SceneListChanged', data)
           setState({
             scenes: data.scenes.map((scene) => ({
-              name: scene.name as string,
+              order: scene.sceneIndex as number,
+              name: scene.sceneName as string,
               id: scene.sceneUuid as string
             }))
           })
@@ -151,6 +161,25 @@ export const useOBS = create<OBSState & OBSActions>((set, get) => ({
         sceneUuid: sceneId
       })
     }
+  },
+  reloadScenes: async () => {
+    const config = get().config
+    console.log('reloadScenes', config)
+    if (!get().isConnected && config) {
+      await OBSConnectionStore.init(config, set, true)
+    } else {
+      await OBSConnectionStore.get()
+        .call('GetSceneList')
+        .then((scenes) => {
+          set({
+            scenes: scenes.scenes.map((scene) => ({
+              order: scene.sceneIndex as number,
+              name: scene.sceneName as string,
+              id: scene.sceneUuid as string
+            }))
+          })
+        })
+    }
   }
 }))
 
@@ -160,6 +189,7 @@ export function useOBSInit() {
   const setState = useOBS((state) => state.setState)
 
   useEffect(() => {
+    setState({ config: obsConfig })
     if (obsConfig) {
       OBSConnectionStore.init(obsConfig, setState)
     } else {

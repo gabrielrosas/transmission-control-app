@@ -24,13 +24,13 @@ export const PTZContext = createContext<PTZContextType>({
 
 export function useInitPTZ(config: CameraPTZConfig) {
   const [inProgress, setInProgress] = useState<boolean>(false)
-  const { data, isLoading, error } = useQuery({
+  const { data, isFetching, isRefetching, error, refetch } = useQuery({
     queryKey: ['ptz', config.id],
     retry: 3,
     queryFn: () => window.ptz.init(config)
   })
 
-  console.log('useInitPTZ', { config, data, isLoading, error })
+  console.log('useInitPTZ', { config, data, isFetching, isRefetching, error })
 
   const presets = useMemo(() => {
     return data?.slice(0, config.presetLimit || 100) || []
@@ -38,10 +38,12 @@ export function useInitPTZ(config: CameraPTZConfig) {
 
   return {
     control: { config, presets, inProgress, setInProgress },
-    isLoading,
+    isLoading: isFetching,
+    isRefetching,
     presets,
     inProgress,
-    error
+    error,
+    refetch
   }
 }
 
@@ -49,11 +51,15 @@ export function useGotoPTZ(preset: PTZPreset, preview: boolean = false) {
   const { config, setInProgress } = useContext(PTZContext)
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
+  const previewScene = useOBS((state) => state.previewScene)
   const { mutate: gotoPreset, isPending: isGotoPending } = useMutation({
     mutationFn: async () => {
       if (config) {
         setInProgress(true)
         if (preview && config.sceneId) {
+          if (previewScene?.id === config.sceneId && config.axSceneId) {
+            await changeProgramScene(config.axSceneId)
+          }
           await changePreviewScene(config.sceneId)
           await window.ptz.goto({ id: config.id, preset: preset.id })
         } else if (!preview && config.axSceneId && config.sceneId) {
