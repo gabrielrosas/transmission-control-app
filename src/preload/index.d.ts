@@ -11,7 +11,6 @@ type CameraPTZConfig = {
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: unknown
     ptz: {
       init: (config: CameraPTZConfig) => Promise<{ id: string; name: string }[]>
       getPresets: (id: string) => Promise<{ id: string; name: string }[]>

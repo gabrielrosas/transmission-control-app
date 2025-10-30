@@ -11,9 +11,6 @@ type CameraPTZConfig = {
   sceneId?: string | null | undefined
 }
 
-// Custom APIs for renderer
-const api = {}
-
 const ptz = {
   init: (config: CameraPTZConfig) => ipcRenderer.invoke('ptz:init', config),
   getPresets: (id: string) => ipcRenderer.invoke('ptz:getPresets', id),
@@ -26,7 +23,6 @@ const ptz = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('ptz', ptz)
   } catch (error) {
     console.error(error)
@@ -34,8 +30,6 @@ if (process.contextIsolated) {
 } else {
   // @ts-ignore (define in dts)
   window.electron = electronAPI
-  // @ts-ignore (define in dts)
-  window.api = api
   // @ts-ignore (define in dts)
   window.ptz = ptz
 }
