@@ -97,7 +97,7 @@ export function useLoadImage(preset: PTZPreset) {
   return useCallback(async () => {
     if (config && config.sceneId) {
       if (images[config.id]?.[preset.id]) {
-        return images[config.id]?.[preset.id]
+        return
       }
       await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
       if (isConnected) {
