@@ -52,7 +52,7 @@ export function ObsPage() {
           OBS
         </Title>
       </Content.Header>
-      <Content.Content>
+      <Content.Content className="grow min-h-0 overflow-auto no-scrollbar">
         <form onSubmit={handleSubmit(onSubmit)}>
           <Box direction="column" gap="medium" margin="auto" padding="medium" width="form">
             <FormControl label="Endereço IP" error={errors.ip?.message}>

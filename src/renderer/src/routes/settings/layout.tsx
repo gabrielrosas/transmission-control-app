@@ -27,7 +27,7 @@ export function SettingsLayout() {
           <LogOut size={16} />
         </Button>
       </nav>
-      <main className="p-4 pt-[50px] h-full flex flex-col items-center ">
+      <main className="p-2 pt-[44px] h-full flex flex-col items-center ">
         <Outlet />
       </main>
     </Page.Container>

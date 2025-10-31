@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type CameraPTZConfig } from '../../schemas/CameraPTZ'
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { useOBS } from '../obs'
+import { useLocalStorage } from 'usehooks-ts'
 
 export type PTZPreset = {
   id: string
@@ -50,6 +51,7 @@ export function useGotoPTZ(preset: PTZPreset, onlyPreview: boolean = false) {
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
   const programScene = useOBS((state) => state.programScene)
+  const loadImage = useLoadImage(preset)
   const { mutate: gotoPreset, isPending: isGotoPending } = useMutation({
     mutationFn: async () => {
       if (config) {
@@ -60,8 +62,8 @@ export function useGotoPTZ(preset: PTZPreset, onlyPreview: boolean = false) {
           }
           await changePreviewScene(config.sceneId)
           await window.ptz.goto({ id: config.id, preset: preset.id })
+          await loadImage()
           if (!onlyPreview) {
-            await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
             await changeProgramScene(config.sceneId)
           }
         } else {
@@ -77,4 +79,31 @@ export function useGotoPTZ(preset: PTZPreset, onlyPreview: boolean = false) {
 
 export function useGotoPTZPreview(preset: PTZPreset) {
   return useGotoPTZ(preset, true)
+}
+
+export function useLoadImage(preset: PTZPreset) {
+  const { config } = useContext(PTZContext)
+  const [, setImages] = useLocalStorage<Record<string, string>>('ptz-images', {})
+
+  const getImage = useOBS((state) => state.getImage)
+
+  return useCallback(async () => {
+    if (config && config.sceneId) {
+      await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
+      const image = await getImage(config.sceneId)
+      setImages((prev) => ({ ...prev, [`${config.sceneId}-${config.id}-${preset.id}`]: image }))
+    }
+  }, [config, preset, getImage, setImages])
+}
+
+export function useGetImage(preset: PTZPreset) {
+  const { config } = useContext(PTZContext)
+  const [images] = useLocalStorage<Record<string, string>>('ptz-images', {})
+
+  return useMemo(() => {
+    if (config && config.sceneId) {
+      return images[`${config.sceneId}-${config.id}-${preset.id}`]
+    }
+    return undefined
+  }, [images, preset, config])
 }

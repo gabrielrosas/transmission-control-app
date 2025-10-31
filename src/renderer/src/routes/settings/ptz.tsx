@@ -5,13 +5,13 @@ import { Title } from '@renderer/components/titles'
 import { WebcamIcon, Plus, Trash, Save } from 'lucide-react'
 import { useConfig } from '@renderer/hooks/config'
 import { CameraPTZConfig, CameraPTZConfigSchema } from '@renderer/schemas/CameraPTZ'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { v4 as uuidv4 } from 'uuid'
 import { useMutation } from '@tanstack/react-query'
-import { Select } from '@renderer/components/form/Select'
+import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
 
 const addCameraToast = (promise: Promise<unknown>) =>
@@ -93,22 +93,25 @@ export function PtzPage() {
       <Content.Header>
         <Title icon={WebcamIcon}>PTZ</Title>
       </Content.Header>
-      <Content.Content className="grow min-h-0 overflow-auto">
+      <Content.Content className="grow min-h-0 overflow-auto no-scrollbar">
         <div className="flex flex-col gap-2 w-full min-h-full">
           <div className="w-full flex flex-row gap-2">
             <Select
-              containerClassName="flex-1"
-              options={[
-                { label: 'Selecione uma câmera', value: '' },
-                ...Object.values(cameraPTZConfig).map((camera) => ({
-                  label: camera.name,
-                  value: camera.id
-                }))
-              ]}
-              value={selectedCamera?.id}
-              onChange={(e) => {
-                const value = e.target.value
-                setSelectedCamera(cameraPTZConfig[value])
+              isClearable
+              placeholder="Selecione uma câmera"
+              options={Object.values(cameraPTZConfig).map((camera) => ({
+                label: camera.name,
+                value: camera.id
+              }))}
+              value={
+                selectedCamera ? { label: selectedCamera.name, value: selectedCamera.id } : null
+              }
+              onChange={(value) => {
+                if (value) {
+                  setSelectedCamera(cameraPTZConfig[value.value])
+                } else {
+                  setSelectedCamera(null)
+                }
               }}
             />
             <Button
@@ -120,12 +123,16 @@ export function PtzPage() {
               <Plus />
             </Button>
           </div>
+
           {selectedCamera && (
-            <FormCamera
-              camera={selectedCamera}
-              saveCamera={saveCamera}
-              deleteCamera={deleteCamera}
-            />
+            <>
+              <div className="h-px w-full bg-border my-4" />
+              <FormCamera
+                camera={selectedCamera}
+                saveCamera={saveCamera}
+                deleteCamera={deleteCamera}
+              />
+            </>
           )}
         </div>
       </Content.Content>
@@ -148,6 +155,7 @@ function FormCamera({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors }
   } = useForm({
     resolver: zodResolver(CameraPTZConfigSchema),
@@ -165,6 +173,15 @@ function FormCamera({
   useEffect(() => {
     reset(camera)
   }, [camera, reset])
+
+  const sceneOptions = useMemo(
+    () =>
+      scenes.reduce<Record<string, Option>>((acc, scene) => {
+        acc[scene.id] = { label: scene.name, value: scene.id }
+        return acc
+      }, {}),
+    [scenes]
+  )
 
   return (
     <form
@@ -196,21 +213,35 @@ function FormCamera({
         />
       </FormControl>
       <FormControl label="Cena do OBS" error={errors.sceneId?.message}>
-        <Select
-          options={[
-            { label: 'Selecione uma cena', value: '' },
-            ...scenes.map((scene) => ({ label: scene.name, value: scene.id }))
-          ]}
-          {...register('sceneId')}
+        <Controller
+          control={control}
+          name="sceneId"
+          render={({ field: { value, onChange, onBlur } }) => (
+            <Select
+              isClearable
+              options={Object.values(sceneOptions)}
+              value={value ? { label: sceneOptions[value]?.label || '', value } : null}
+              onChange={(value) => onChange(value?.value || null)}
+              onBlur={onBlur}
+              placeholder="Selecione uma cena"
+            />
+          )}
         />
       </FormControl>
       <FormControl label="Cena auxiliar do OBS" error={errors.axSceneId?.message}>
-        <Select
-          options={[
-            { label: 'Selecione uma cena', value: '' },
-            ...scenes.map((scene) => ({ label: scene.name, value: scene.id }))
-          ]}
-          {...register('axSceneId')}
+        <Controller
+          control={control}
+          name="axSceneId"
+          render={({ field: { value, onChange, onBlur } }) => (
+            <Select
+              isClearable
+              options={Object.values(sceneOptions)}
+              value={value ? { label: sceneOptions[value]?.label || '', value } : null}
+              onChange={(value) => onChange(value?.value || null)}
+              onBlur={onBlur}
+              placeholder="Selecione uma cena auxiliar"
+            />
+          )}
         />
       </FormControl>
       <FormControl label="Tempo de transição (ms)" error={errors.transitionTime?.message}>

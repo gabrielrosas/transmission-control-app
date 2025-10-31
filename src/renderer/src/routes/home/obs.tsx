@@ -5,10 +5,11 @@ import { StatusTag } from '../../components/Tag'
 import { Subtitle } from '../../components/titles'
 import { OBSScene, useOBS } from '../../hooks/obs'
 import { GroupButton } from '@renderer/components/GroupButton'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { cn } from '@renderer/libs/cn'
 import { useConfig } from '@renderer/hooks/config'
+import { Tooltip } from '@renderer/components/Tooltip'
 
 export function ObsCard() {
   const isConnected = useOBS((state) => state.isConnected)
@@ -89,6 +90,7 @@ type SceneButtonsProps = {
 function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsProps) {
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
+  const getImage = useOBS((state) => state.getImage)
 
   const { mutate: changeProgramSceneMutation, isPending: isChangingProgramScene } = useMutation({
     mutationFn: async () => {
@@ -104,15 +106,26 @@ function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsPro
 
   return (
     <GroupButton.Container key={scene.id}>
-      <GroupButton.Button
-        icon={Eye}
-        onClick={() => changePreviewSceneMutation()}
-        variant={isProgramScene ? 'error' : isPreviewScene ? 'successOutline' : 'defaultOutline'}
-        className="grow"
-        isLoading={isChangingPreviewScene}
+      <Tooltip
+        delay={500}
+        skipDelay={0}
+        trigger={
+          <GroupButton.Button
+            icon={Eye}
+            onMouseEnter={() => getImage(scene.id)}
+            onClick={() => changePreviewSceneMutation()}
+            variant={
+              isProgramScene ? 'error' : isPreviewScene ? 'successOutline' : 'defaultOutline'
+            }
+            className="grow"
+            isLoading={isChangingPreviewScene}
+          >
+            {scene.name}
+          </GroupButton.Button>
+        }
       >
-        {scene.name}
-      </GroupButton.Button>
+        <SceneImage scene={scene} />
+      </Tooltip>
       <GroupButton.Button
         onClick={() => changeProgramSceneMutation()}
         variant={isProgramScene ? 'error' : 'errorOutline'}
@@ -127,5 +140,24 @@ function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsPro
         )}
       </GroupButton.Button>
     </GroupButton.Container>
+  )
+}
+
+function SceneImage({ scene }: { scene: OBSScene }) {
+  const getImage = useOBS((state) => state.getImage)
+
+  const { data: image, isLoading } = useQuery({
+    queryKey: ['scene-image', scene.id],
+    queryFn: () => getImage(scene.id)
+  })
+
+  return (
+    <div className="w-[300px] h-[170px] flex items-center justify-center">
+      {isLoading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <img src={image} alt={scene.name} className="w-full h-full object-contain" />
+      )}
+    </div>
   )
 }

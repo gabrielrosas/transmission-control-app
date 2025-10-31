@@ -24,6 +24,7 @@ export type OBSActions = {
   changeProgramScene: (sceneId: string) => Promise<void>
   changePreviewScene: (sceneId: string) => Promise<void>
   reloadScenes: () => Promise<void>
+  getImage: (sceneId: string) => Promise<string>
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -177,6 +178,16 @@ export const useOBS = create<OBSState & OBSActions>((set, get) => ({
           })
         })
     }
+  },
+  getImage: async (sceneId: string) => {
+    if (get().isConnected) {
+      const response = await OBSConnectionStore.get().call('GetSourceScreenshot', {
+        sourceUuid: sceneId,
+        imageFormat: 'png'
+      })
+      return response.imageData
+    }
+    throw new Error('Not connected to OBS')
   }
 }))
 
