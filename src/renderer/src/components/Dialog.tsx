@@ -1,7 +1,7 @@
 import * as DialogBase from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { Button } from './Button'
-import { useConfirmStore } from '@renderer/hooks/utils'
+// import { useConfirmStore } from '@renderer/hooks/utils'
 
 type DialogProps = {
   trigger?: React.ReactNode
@@ -72,15 +72,17 @@ export function DialogConfirm({
         <Button variant="error" className="grow" onClick={handleConfirm}>
           {labelConfirm || 'Confirmar'}
         </Button>
-        <Button className="grow" onClick={handleCancel}>
-          {labelCancel || 'Cancelar'}
-        </Button>
+        <DialogClose asChild>
+          <Button className="grow" onClick={handleCancel}>
+            {labelCancel || 'Cancelar'}
+          </Button>
+        </DialogClose>
       </div>
     </Dialog>
   )
 }
 
-export function DialogConfirmProvider() {
-  const props = useConfirmStore((state) => state.props)
-  return <DialogConfirm {...props} />
-}
+// export function DialogConfirmProvider() {
+//   const props = useConfirmStore((state) => state.props)
+//   return <DialogConfirm {...props} />
+// }

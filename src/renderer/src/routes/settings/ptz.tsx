@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useMutation } from '@tanstack/react-query'
 import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
-import { useConfirm } from '@renderer/hooks/utils'
+
 import { useClearImages } from '@renderer/hooks/ptz'
 
 const addCameraToast = (promise: Promise<unknown>) =>
@@ -41,7 +41,6 @@ export function PtzPage() {
   const [selectedCamera, setSelectedCamera] = useState<CameraPTZConfig | null>(
     Object.values(cameraPTZConfig)[0] || null
   )
-  const confirm = useConfirm()
 
   const { mutate: addCamera, isPending: isAddingCamera } = useMutation({
     mutationFn: async () => {
@@ -79,22 +78,16 @@ export function PtzPage() {
 
   const deleteCamera = useCallback(
     async (camera: CameraPTZConfig) => {
-      const confirmed = await confirm({
-        title: 'Tem certeza que deseja deletar a câmera?',
-        description: 'Esta ação irá deletar a câmera permanentemente.'
-      })
-      if (confirmed) {
-        await deleteCameraToast(
-          (async () => {
-            const newCameraPTZConfig = { ...cameraPTZConfig }
-            delete newCameraPTZConfig[camera.id]
-            await setConfig({ cameraPTZConfig: newCameraPTZConfig })
-            setSelectedCamera(null)
-          })()
-        )
-      }
+      await deleteCameraToast(
+        (async () => {
+          const newCameraPTZConfig = { ...cameraPTZConfig }
+          delete newCameraPTZConfig[camera.id]
+          await setConfig({ cameraPTZConfig: newCameraPTZConfig })
+          setSelectedCamera(null)
+        })()
+      )
     },
-    [cameraPTZConfig, setConfig, confirm]
+    [cameraPTZConfig, setConfig]
   )
   return (
     <Content.Container className="h-full">
