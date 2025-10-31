@@ -149,7 +149,7 @@ function PresetImage({ preset }: { preset: PTZPreset }) {
   return (
     <div className="w-[300px] h-[170px] flex items-center justify-center">
       {image ? (
-        <img src={image} alt={preset.name} className="w-full h-full object-contain" />
+        <img src={image} alt={preset.name} className="w-full h-full object-contain rounded-md" />
       ) : (
         <ImageOff className="size-6 opacity-50" />
       )}

@@ -156,7 +156,7 @@ function SceneImage({ scene }: { scene: OBSScene }) {
       {isLoading ? (
         <Loader2 className="size-4 animate-spin" />
       ) : (
-        <img src={image} alt={scene.name} className="w-full h-full object-contain" />
+        <img src={image} alt={scene.name} className="w-full h-full object-contain rounded-md" />
       )}
     </div>
   )
