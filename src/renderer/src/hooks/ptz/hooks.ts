@@ -81,31 +81,58 @@ export function useGotoPTZPreview(preset: PTZPreset) {
   return useGotoPTZ(preset, true)
 }
 
+type LSPTZImages = {
+  [configId: string]: {
+    [presetId: string]: string
+  }
+}
+
 export function useLoadImage(preset: PTZPreset) {
   const { config } = useContext(PTZContext)
-  const [, setImages] = useLocalStorage<Record<string, string>>('ptz-images', {})
+  const [images, setImages] = useLocalStorage<LSPTZImages>('ptz-images', {})
 
   const getImage = useOBS((state) => state.getImage)
   const isConnected = useOBS((state) => state.isConnected)
 
   return useCallback(async () => {
     if (config && config.sceneId) {
+      if (images[config.id]?.[preset.id]) {
+        return images[config.id]?.[preset.id]
+      }
       await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
       if (isConnected) {
         const image = await getImage(config.sceneId)
-        setImages((prev) => ({ ...prev, [`${config.sceneId}-${config.id}-${preset.id}`]: image }))
+        setImages((prev) => ({
+          ...prev,
+          [config.id]: {
+            ...(prev[config.id] || {}),
+            [preset.id]: image
+          }
+        }))
       }
     }
-  }, [config, preset, getImage, setImages, isConnected])
+  }, [config, preset, getImage, setImages, isConnected, images])
+}
+
+export function useClearImages(config: CameraPTZConfig) {
+  const [, setImages] = useLocalStorage<LSPTZImages>('ptz-images', {})
+  return useCallback(() => {
+    if (config) {
+      setImages((prev) => ({
+        ...prev,
+        [config.id]: {}
+      }))
+    }
+  }, [config, setImages])
 }
 
 export function useGetImage(preset: PTZPreset) {
   const { config } = useContext(PTZContext)
-  const [images] = useLocalStorage<Record<string, string>>('ptz-images', {})
+  const [images] = useLocalStorage<LSPTZImages>('ptz-images', {})
 
   return useMemo(() => {
     if (config && config.sceneId) {
-      return images[`${config.sceneId}-${config.id}-${preset.id}`]
+      return images[config.id]?.[preset.id] || undefined
     }
     return undefined
   }, [images, preset, config])

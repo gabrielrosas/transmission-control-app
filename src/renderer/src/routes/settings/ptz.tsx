@@ -14,6 +14,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
 import { useConfirm } from '@renderer/hooks/utils'
+import { useClearImages } from '@renderer/hooks/ptz'
 
 const addCameraToast = (promise: Promise<unknown>) =>
   toast.promise(promise, {
@@ -157,6 +158,7 @@ function FormCamera({
   deleteCamera: (camera: CameraPTZConfig) => Promise<void>
 }) {
   const scenes = useOBS((state) => state.scenes)
+  const clearImages = useClearImages(camera)
 
   const {
     register,
@@ -279,6 +281,17 @@ function FormCamera({
           onClick={() => deleteCameraMutation(camera)}
         >
           Apagar
+        </Button>
+        <Button
+          icon={Trash}
+          type="button"
+          variant="error"
+          onClick={() => {
+            clearImages()
+            toast.success('Imagens limpas com sucesso!')
+          }}
+        >
+          Limpar imagens
         </Button>
       </div>
     </form>

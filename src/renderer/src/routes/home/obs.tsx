@@ -5,11 +5,10 @@ import { StatusTag } from '../../components/Tag'
 import { Subtitle } from '../../components/titles'
 import { OBSScene, useOBS } from '../../hooks/obs'
 import { GroupButton } from '@renderer/components/GroupButton'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { cn } from '@renderer/libs/cn'
 import { useConfig } from '@renderer/hooks/config'
-import { Tooltip } from '@renderer/components/Tooltip'
 
 export function ObsCard() {
   const isConnected = useOBS((state) => state.isConnected)
@@ -106,7 +105,7 @@ function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsPro
 
   return (
     <GroupButton.Container key={scene.id}>
-      <Tooltip
+      {/* <Tooltip
         delay={500}
         skipDelay={0}
         trigger={
@@ -125,7 +124,17 @@ function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsPro
         }
       >
         <SceneImage scene={scene} />
-      </Tooltip>
+      </Tooltip> */}
+      <GroupButton.Button
+        icon={Eye}
+        onMouseEnter={() => getImage(scene.id)}
+        onClick={() => changePreviewSceneMutation()}
+        variant={isProgramScene ? 'error' : isPreviewScene ? 'successOutline' : 'defaultOutline'}
+        className="grow"
+        isLoading={isChangingPreviewScene}
+      >
+        {scene.name}
+      </GroupButton.Button>
       <GroupButton.Button
         onClick={() => changeProgramSceneMutation()}
         variant={isProgramScene ? 'error' : 'errorOutline'}
@@ -143,21 +152,21 @@ function SceneButtons({ scene, isProgramScene, isPreviewScene }: SceneButtonsPro
   )
 }
 
-function SceneImage({ scene }: { scene: OBSScene }) {
-  const getImage = useOBS((state) => state.getImage)
+// function SceneImage({ scene }: { scene: OBSScene }) {
+//   const getImage = useOBS((state) => state.getImage)
 
-  const { data: image, isLoading } = useQuery({
-    queryKey: ['scene-image', scene.id],
-    queryFn: () => getImage(scene.id)
-  })
+//   const { data: image, isLoading } = useQuery({
+//     queryKey: ['scene-image', scene.id],
+//     queryFn: () => getImage(scene.id)
+//   })
 
-  return (
-    <div className="w-[300px] h-[170px] flex items-center justify-center">
-      {isLoading ? (
-        <Loader2 className="size-4 animate-spin" />
-      ) : (
-        <img src={image} alt={scene.name} className="w-full h-full object-contain rounded-md" />
-      )}
-    </div>
-  )
-}
+//   return (
+//     <div className="w-[300px] h-[170px] flex items-center justify-center">
+//       {isLoading ? (
+//         <Loader2 className="size-4 animate-spin" />
+//       ) : (
+//         <img src={image} alt={scene.name} className="w-full h-full object-contain rounded-md" />
+//       )}
+//     </div>
+//   )
+// }

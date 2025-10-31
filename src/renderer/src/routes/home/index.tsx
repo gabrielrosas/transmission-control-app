@@ -3,7 +3,7 @@ import { Box } from '../../components/Box'
 import { ObsCard } from './obs'
 import { PtzCard } from './ptz'
 import { useState } from 'react'
-import { OverlayersCard } from './overlayers'
+// import { OverlayersCard } from './overlayers'
 
 export function HomePage() {
   const cameraPTZConfig = useConfig((state) => state.config.cameraPTZConfig)
@@ -19,10 +19,10 @@ export function HomePage() {
             changeColapsed={() => setSelected(selected === camera.id ? null : camera.id)}
           />
         ))}
-        <OverlayersCard
+        {/* <OverlayersCard
           selected={selected === 'overlayers'}
           changeColapsed={() => setSelected(selected === 'overlayers' ? null : 'overlayers')}
-        />
+        /> */}
       </div>
       <ObsCard />
     </Box>
