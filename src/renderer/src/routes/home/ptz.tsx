@@ -3,7 +3,7 @@ import { GroupButton } from '@renderer/components/GroupButton'
 import { StatusTag } from '@renderer/components/Tag'
 import { Subtitle } from '@renderer/components/titles'
 import { Tooltip } from '@renderer/components/Tooltip'
-import { useConfig } from '@renderer/hooks/config'
+
 import {
   PTZControl,
   PTZPreset,
@@ -15,33 +15,13 @@ import {
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
 import { Loader2, Webcam, Eye, Play, RefreshCcw, ImageOff } from 'lucide-react'
-import { useState } from 'react'
-
-export function PtzCards() {
-  const cameraPTZConfig = useConfig((state) => state.config.cameraPTZConfig)
-  const [cameraSelected, setCameraSelected] = useState<string | null>(
-    Object.keys(cameraPTZConfig)[0] || null
-  )
-  return (
-    <div className="flex flex-col gap-2 grow min-h-0 w-full">
-      {Object.values(cameraPTZConfig).map((camera) => (
-        <PtzCard
-          key={camera.id}
-          camera={camera}
-          selected={cameraSelected === camera.id}
-          changeColapsed={() => setCameraSelected(cameraSelected === camera.id ? null : camera.id)}
-        />
-      ))}
-    </div>
-  )
-}
 
 type PtzCardProps = {
   camera: CameraPTZConfig
   selected: boolean
   changeColapsed: () => void
 }
-function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
+export function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
   const { presets, isLoading, control, inProgress, isRefetching, error, refetch } =
     useInitPTZ(camera)
   return (

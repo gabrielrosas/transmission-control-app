@@ -1,2 +1,5 @@
 export * from './FormControl'
 export * from './TextField'
+export * from './TextAreaField'
+export * from './Select'
+export * from './Checkbox'

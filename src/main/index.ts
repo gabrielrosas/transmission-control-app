@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, screen, clipboard } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -67,6 +67,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
     return CamStore.getCam(id).goto(preset)
+  })
+
+  ipcMain.handle('clipboard:writeText', async (_, text: string) => {
+    return clipboard.writeText(text)
   })
 
   createWindow()

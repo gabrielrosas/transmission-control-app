@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { useMutation } from '@tanstack/react-query'
 import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
+import { useConfirm } from '@renderer/hooks/utils'
 
 const addCameraToast = (promise: Promise<unknown>) =>
   toast.promise(promise, {
@@ -26,7 +27,6 @@ const saveCameraToast = (promise: Promise<unknown>) =>
     success: 'Câmera salva com sucesso!',
     error: 'Erro ao salvar câmera'
   })
-
 const deleteCameraToast = (promise: Promise<unknown>) =>
   toast.promise(promise, {
     loading: 'Deletando câmera...',
@@ -40,6 +40,7 @@ export function PtzPage() {
   const [selectedCamera, setSelectedCamera] = useState<CameraPTZConfig | null>(
     Object.values(cameraPTZConfig)[0] || null
   )
+  const confirm = useConfirm()
 
   const { mutate: addCamera, isPending: isAddingCamera } = useMutation({
     mutationFn: async () => {
@@ -77,16 +78,22 @@ export function PtzPage() {
 
   const deleteCamera = useCallback(
     async (camera: CameraPTZConfig) => {
-      await deleteCameraToast(
-        (async () => {
-          const newCameraPTZConfig = { ...cameraPTZConfig }
-          delete newCameraPTZConfig[camera.id]
-          await setConfig({ cameraPTZConfig: newCameraPTZConfig })
-          setSelectedCamera(null)
-        })()
-      )
+      const confirmed = await confirm({
+        title: 'Tem certeza que deseja deletar a câmera?',
+        description: 'Esta ação irá deletar a câmera permanentemente.'
+      })
+      if (confirmed) {
+        await deleteCameraToast(
+          (async () => {
+            const newCameraPTZConfig = { ...cameraPTZConfig }
+            delete newCameraPTZConfig[camera.id]
+            await setConfig({ cameraPTZConfig: newCameraPTZConfig })
+            setSelectedCamera(null)
+          })()
+        )
+      }
     },
-    [cameraPTZConfig, setConfig]
+    [cameraPTZConfig, setConfig, confirm]
   )
   return (
     <Content.Container className="h-full">

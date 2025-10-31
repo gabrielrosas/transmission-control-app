@@ -16,5 +16,8 @@ declare global {
       getPresets: (id: string) => Promise<{ id: string; name: string }[]>
       goto: ({ id, preset }: { id: string; preset: string }) => Promise<void>
     }
+    clipboard: {
+      writeText: (text: string) => Promise<void>
+    }
   }
 }

@@ -86,14 +86,17 @@ export function useLoadImage(preset: PTZPreset) {
   const [, setImages] = useLocalStorage<Record<string, string>>('ptz-images', {})
 
   const getImage = useOBS((state) => state.getImage)
+  const isConnected = useOBS((state) => state.isConnected)
 
   return useCallback(async () => {
     if (config && config.sceneId) {
       await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
-      const image = await getImage(config.sceneId)
-      setImages((prev) => ({ ...prev, [`${config.sceneId}-${config.id}-${preset.id}`]: image }))
+      if (isConnected) {
+        const image = await getImage(config.sceneId)
+        setImages((prev) => ({ ...prev, [`${config.sceneId}-${config.id}-${preset.id}`]: image }))
+      }
     }
-  }, [config, preset, getImage, setImages])
+  }, [config, preset, getImage, setImages, isConnected])
 }
 
 export function useGetImage(preset: PTZPreset) {

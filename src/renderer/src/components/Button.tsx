@@ -68,6 +68,7 @@ export type ButtonProps = {
   icon?: LucideIcon
   secondaryIcon?: LucideIcon
   isLoading?: boolean
+  iconClassName?: string
 } & VariantProps<typeof buttonVariants> &
   React.ButtonHTMLAttributes<HTMLButtonElement>
 
@@ -83,6 +84,7 @@ export function Button({
   rounded,
   full,
   size,
+  iconClassName,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot.Root : 'button'
@@ -92,10 +94,10 @@ export function Button({
       if (isLoading) {
         return <Loader2 className="size-4 animate-spin" />
       }
-      return <Icon className={buttonIconVariants({ size })} />
+      return <Icon className={cn(buttonIconVariants({ size }), iconClassName)} />
     }
     return undefined
-  }, [Icon, isLoading, size])
+  }, [Icon, isLoading, size, iconClassName])
 
   const SecondaryIconRender = useMemo(() => {
     if (SecondaryIcon) {
