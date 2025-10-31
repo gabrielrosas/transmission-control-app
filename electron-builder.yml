@@ -13,10 +13,12 @@ asar: true
 asarUnpack:
   - resources/**
 win:
-  executableName: transmission-control-app
-  target: portable
-portable:
-  artifactName: ${name}-${version}.${ext}
+  executableName: test-electron
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

@@ -37,6 +37,7 @@ export class Cam implements CamBase {
   async connect() {
     try {
       await this.cam.connect()
+      console.log('PTZ connect done')
       this.isConnected = true
     } catch (error) {
       console.error(error)
@@ -112,6 +113,7 @@ export class CamStore {
   static cams: Record<string, CamBase> = {}
 
   static async initCam(config: CameraPTZConfig) {
+    console.log('initCam start', config, isDev)
     try {
       if (CamStore.cams[config.id]) {
         if (!CamStore.cams[config.id].isConnected) {
@@ -130,6 +132,7 @@ export class CamStore {
   }
 
   static getCam(id: string) {
+    console.log('getCam start', id, isDev)
     if (!CamStore.cams[id] || !CamStore.cams[id].isConnected) {
       throw new Error(`Camera ${id} not found`)
     }
