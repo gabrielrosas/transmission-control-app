@@ -14,6 +14,7 @@ interface CamBase {
   goto: (preset: string) => Promise<void>
   isConnected: boolean
   connect: () => Promise<void>
+  disconnect: () => Promise<void>
 }
 
 const isDev = false
@@ -37,11 +38,22 @@ export class Cam implements CamBase {
   async connect() {
     try {
       await this.cam.connect()
-      console.log('PTZ connect done')
       this.isConnected = true
+      console.log(`PTZ ${this.config.id} connected`)
     } catch (error) {
       console.error(error)
       this.isConnected = false
+      throw error
+    }
+  }
+
+  async disconnect() {
+    try {
+      await this.cam.diconnect()
+      this.isConnected = false
+      console.log(`PTZ ${this.config.id} disconnected`)
+    } catch (error) {
+      console.log(error)
       throw error
     }
   }
@@ -75,13 +87,12 @@ export class Cam implements CamBase {
 }
 
 class CamMock implements CamBase {
+  private config: CameraPTZConfig
   isConnected: boolean = true
   error: boolean = false
 
   constructor(config: CameraPTZConfig) {
-    if (config.ip === '0.0.0.0') {
-      this.error = true
-    }
+    this.config = config
     this.isConnected = false
   }
   async getPresets() {
@@ -100,12 +111,18 @@ class CamMock implements CamBase {
     console.log('goto mock done', preset)
   }
   async connect() {
-    if (this.error) {
+    if (this.config.id === '1.1.1.1') {
       const error = new Error('Error connecting to camera')
       console.error(error)
       throw error
     }
     this.isConnected = true
+    console.log(`PTZ ${this.config.id} connected`)
+  }
+
+  async disconnect() {
+    this.isConnected = false
+    console.log(`PTZ ${this.config.id} disconnected`)
   }
 }
 

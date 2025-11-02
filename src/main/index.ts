@@ -15,7 +15,7 @@ function createWindow(): void {
     x: screen.getPrimaryDisplay().workAreaSize.width - width,
     y: 0,
     show: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -67,6 +67,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
     return CamStore.getCam(id).goto(preset)
+  })
+
+  ipcMain.handle('ptz:disconnect', async (_, id: string) => {
+    return CamStore.getCam(id).disconnect()
   })
 
   createWindow()
