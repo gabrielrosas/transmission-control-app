@@ -1,4 +1,5 @@
 import { Content } from '@renderer/components/containers'
+import { ContextMenu } from '@renderer/components/ContextMenu'
 import { GroupButton } from '@renderer/components/GroupButton'
 import { StatusTag } from '@renderer/components/Tag'
 import { Subtitle } from '@renderer/components/titles'
@@ -8,13 +9,14 @@ import {
   PTZControl,
   PTZPreset,
   useInitPTZ,
-  useGotoPTZ,
-  useGotoPTZPreview,
-  useGetImage
+  useGotoPreset,
+  PTZPresetControl,
+  usePresetData,
+  useImagePreset
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
-import { Loader2, Webcam, Eye, Play, RefreshCcw, ImageOff } from 'lucide-react'
+import { Loader2, Webcam, Eye, Play, RefreshCcw, Image, EyeOff, ImageOff } from 'lucide-react'
 
 type PtzCardProps = {
   camera: CameraPTZConfig
@@ -22,8 +24,7 @@ type PtzCardProps = {
   changeColapsed: () => void
 }
 export function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
-  const { presets, isLoading, control, inProgress, isRefetching, error, refetch } =
-    useInitPTZ(camera)
+  const { presets, isLoading, control, isRefetching, error, refetch } = useInitPTZ(camera)
   return (
     <Content.Container
       className={cn({ 'grow min-h-0': selected })}
@@ -77,7 +78,7 @@ export function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
             ) : (
               <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto no-scrollbar">
                 {presets.map((preset) => (
-                  <Preset key={preset.id} preset={preset} inProgress={inProgress} />
+                  <Preset key={preset.id} preset={preset} />
                 ))}
               </div>
             )}
@@ -88,51 +89,94 @@ export function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
   )
 }
 
-function Preset({ preset, inProgress }: { preset: PTZPreset; inProgress: boolean }) {
-  const { gotoPreset, isLoading } = useGotoPTZ(preset)
-  const { gotoPreset: gotoPresetPreview, isLoading: isLoadingPreview } = useGotoPTZPreview(preset)
+function Preset({ preset }: { preset: PTZPreset }) {
   return (
-    <GroupButton.Container>
-      <Tooltip
-        delay={800}
-        skipDelay={0}
-        trigger={
-          <GroupButton.Button
-            icon={Eye}
-            onClick={() => gotoPresetPreview()}
-            variant={isLoadingPreview ? 'successOutline' : 'defaultOutline'}
-            disabled={inProgress}
-            isLoading={isLoadingPreview}
-            className="grow gap-2"
-          >
-            <div className="grow max-w-[100px] h-[40px] text-left overflow-hidden text-ellipsis flex items-center">
-              {preset.name.length > 20 ? preset.name.slice(0, 20) + '...' : preset.name}
-            </div>
-          </GroupButton.Button>
-        }
-      >
-        <PresetImage preset={preset} />
-      </Tooltip>
-      <GroupButton.Button
-        onClick={() => gotoPreset()}
-        variant={'errorOutline'}
-        disabled={inProgress}
-      >
-        {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-      </GroupButton.Button>
-    </GroupButton.Container>
+    <PTZPresetControl preset={preset}>
+      <PresetTooltip>
+        <GroupButton.Container>
+          <PresetPreviewButton />
+          <PresetProgramButton />
+        </GroupButton.Container>
+      </PresetTooltip>
+    </PTZPresetControl>
   )
 }
 
-function PresetImage({ preset }: { preset: PTZPreset }) {
-  const image = useGetImage(preset)
+function PresetPreviewButton() {
+  const { name, inProgress } = usePresetData()
+  const { gotoPreset, isLoading } = useGotoPreset()
   return (
-    <div className="w-[300px] h-[170px] flex items-center justify-center">
-      {image ? (
-        <img src={image} alt={preset.name} className="w-full h-full object-contain rounded-md" />
+    <PresetMenu>
+      <GroupButton.Button
+        icon={Eye}
+        onClick={() => gotoPreset(false)}
+        variant={isLoading ? 'successOutline' : 'defaultOutline'}
+        disabled={inProgress}
+        isLoading={isLoading}
+        className="grow gap-2"
+      >
+        <div className="grow max-w-[100px] h-[40px] text-left overflow-hidden text-ellipsis flex items-center">
+          {name.length > 20 ? name.slice(0, 20) + '...' : name}
+        </div>
+      </GroupButton.Button>
+    </PresetMenu>
+  )
+}
+
+function PresetProgramButton() {
+  const { inProgress } = usePresetData()
+  const { gotoPreset, isLoading } = useGotoPreset()
+  return (
+    <GroupButton.Button
+      onClick={() => gotoPreset(true)}
+      variant={'errorOutline'}
+      disabled={inProgress}
+    >
+      {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+    </GroupButton.Button>
+  )
+}
+
+function PresetMenu({ children }: { children: React.ReactNode }) {
+  const { loadImage, clearImage, image } = useImagePreset()
+  return (
+    <ContextMenu.Container trigger={children}>
+      {!image ? (
+        <ContextMenu.Item icon={Image} onClick={loadImage}>
+          Carregar imagem
+        </ContextMenu.Item>
       ) : (
-        <ImageOff className="size-6 opacity-50" />
+        <>
+          <ContextMenu.Item icon={Image} onClick={loadImage}>
+            Atualizar imagem
+          </ContextMenu.Item>
+          <ContextMenu.Item icon={ImageOff} onClick={clearImage}>
+            Apagar imagem
+          </ContextMenu.Item>
+        </>
       )}
-    </div>
+      <ContextMenu.Separator />
+      <ContextMenu.Item icon={EyeOff} disabled>
+        Ocultar
+      </ContextMenu.Item>
+    </ContextMenu.Container>
+  )
+}
+
+function PresetTooltip({ children }: { children: React.ReactNode }) {
+  const presetData = usePresetData()
+  if (!presetData.image) {
+    return children
+  }
+  return (
+    <Tooltip delay={800} skipDelay={0} trigger={<div>{children}</div>}>
+      <div className="w-[300px] h-[170px] flex items-center justify-center">
+        <img
+          src={presetData.image}
+          alt={presetData.name}
+          className="w-full h-full object-contain rounded-md"
+        />
+      </div>
+    </Tooltip>
   )
 }

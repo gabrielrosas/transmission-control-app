@@ -36,7 +36,7 @@ createRoot(document.getElementById('root')!).render(
     </Providers>
     <Toaster
       toastOptions={{
-        className: 'bg-popover! text-white! border! border-border!'
+        className: 'bg-popover! text-white! shadow-tooltip!'
       }}
     />
   </StrictMode>

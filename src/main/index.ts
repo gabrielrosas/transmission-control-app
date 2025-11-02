@@ -15,7 +15,6 @@ function createWindow(): void {
     x: screen.getPrimaryDisplay().workAreaSize.width - width,
     y: 0,
     show: false,
-    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

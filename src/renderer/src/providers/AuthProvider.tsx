@@ -9,7 +9,6 @@ import z from 'zod'
 import { useForm } from 'react-hook-form'
 import { FormError } from '@renderer/components/form'
 import toast from 'react-hot-toast'
-// import { useOverlayerInit } from '@renderer/hooks/overlayer'
 
 function Loading() {
   return (
@@ -110,7 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isLoad = useAuth((state) => state.isLoad)
 
   const configLoad = useConfigInit()
-  // const overlayerLoad = useOverlayerInit()
 
   useEffect(() => {
     load()

@@ -18,26 +18,33 @@ export function Dialog({ title, description, trigger, children, open, setOpen }:
       {trigger && <DialogBase.Trigger asChild>{trigger}</DialogBase.Trigger>}
       <DialogBase.Portal>
         <DialogBase.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-overlayShow" />
-        <DialogBase.Content className="fixed left-1/2 top-1/2 bg-background max-h-[90vh] w-[90vw] max-w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-md p-[25px] shadow-tooltip focus:outline-none data-[state=open]:animate-contentShow">
-          {title && (
-            <DialogBase.Title className="m-0 text-[17px] font-medium text-white">
-              {title}
-            </DialogBase.Title>
-          )}
-          {description && (
-            <DialogBase.Description className="mb-5 mt-2.5 text-[15px] leading-normal text-muted-foreground">
-              {description}
-            </DialogBase.Description>
-          )}
-          {children}
-          <DialogBase.Close asChild>
-            <button
-              className=" cursor-pointer absolute right-2.5 top-2.5 inline-flex size-[25px] appearance-none items-center justify-center rounded-full text-white bg-background hover:bg-background-hover outline-none"
-              aria-label="Close"
-            >
-              <X className="size-4" />
-            </button>
-          </DialogBase.Close>
+        <DialogBase.Content className="fixed left-1/2 top-1/2 bg-background max-h-[90vh] w-[90vw] max-w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-md shadow-tooltip focus:outline-none data-[state=open]:animate-contentShow flex flex-col">
+          <div className="border-b border-border flex flex-row items-stretch">
+            <div className="p-4 grow">
+              {title && (
+                <DialogBase.Title className="m-0 text-[17px] font-medium text-white">
+                  {title}
+                </DialogBase.Title>
+              )}
+            </div>
+            <DialogBase.Close asChild>
+              <button
+                className="cursor-pointer appearance-none p-3 flex items-center justify-center rounded-tr-md w-[40px] text-white bg-background hover:bg-background-hover outline-none"
+                aria-label="Close"
+              >
+                <X className="size-4" />
+              </button>
+            </DialogBase.Close>
+          </div>
+
+          <div className="h-full w-full overflow-auto no-scrollbar p-[25px]">
+            {description && (
+              <DialogBase.Description className="text-[15px] leading-normal text-muted-foreground">
+                {description}
+              </DialogBase.Description>
+            )}
+            {children}
+          </div>
         </DialogBase.Content>
       </DialogBase.Portal>
     </DialogBase.Root>
@@ -69,9 +76,11 @@ export function DialogConfirm({
   return (
     <Dialog {...props}>
       <div className="flex flex-row gap-2 mt-5">
-        <Button variant="error" className="grow" onClick={handleConfirm}>
-          {labelConfirm || 'Confirmar'}
-        </Button>
+        <DialogClose asChild>
+          <Button variant="error" className="grow" onClick={handleConfirm}>
+            {labelConfirm || 'Confirmar'}
+          </Button>
+        </DialogClose>
         <DialogClose asChild>
           <Button className="grow" onClick={handleCancel}>
             {labelCancel || 'Cancelar'}
@@ -81,8 +90,3 @@ export function DialogConfirm({
     </Dialog>
   )
 }
-
-// export function DialogConfirmProvider() {
-//   const props = useConfirmStore((state) => state.props)
-//   return <DialogConfirm {...props} />
-// }

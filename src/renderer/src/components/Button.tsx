@@ -64,6 +64,7 @@ const buttonIconVariants = cva('', {
 })
 
 export type ButtonProps = {
+  ref?: React.RefObject<HTMLButtonElement>
   asChild?: boolean
   icon?: LucideIcon
   secondaryIcon?: LucideIcon

@@ -2,7 +2,7 @@ import { Button } from '@renderer/components/Button'
 import { Content } from '@renderer/components/containers'
 import { TextField, FormControl } from '@renderer/components/form'
 import { Title } from '@renderer/components/titles'
-import { WebcamIcon, Plus, Trash, Save } from 'lucide-react'
+import { WebcamIcon, Plus, Trash, Save, EllipsisVertical, Edit, ImageOff } from 'lucide-react'
 import { useConfig } from '@renderer/hooks/config'
 import { CameraPTZConfig, CameraPTZConfigSchema } from '@renderer/schemas/CameraPTZ'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -15,6 +15,10 @@ import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
 
 import { useClearImages } from '@renderer/hooks/ptz'
+import { useConfirm } from '@renderer/hooks/utils/confirm'
+import { Dialog } from '@renderer/components/Dialog'
+import { GroupButton } from '@renderer/components/GroupButton'
+import { DropdownMenu } from '@renderer/components/DropdownMenu'
 
 const addCameraToast = (promise: Promise<unknown>) =>
   toast.promise(promise, {
@@ -38,9 +42,7 @@ const deleteCameraToast = (promise: Promise<unknown>) =>
 export function PtzPage() {
   const cameraPTZConfig = useConfig((state) => state.config.cameraPTZConfig)
   const setConfig = useConfig((state) => state.setConfig)
-  const [selectedCamera, setSelectedCamera] = useState<CameraPTZConfig | null>(
-    Object.values(cameraPTZConfig)[0] || null
-  )
+  const [selectedCamera, setSelectedCamera] = useState<CameraPTZConfig | null>(null)
 
   const { mutate: addCamera, isPending: isAddingCamera } = useMutation({
     mutationFn: async () => {
@@ -70,6 +72,7 @@ export function PtzPage() {
       await saveCameraToast(
         (async () => {
           await setConfig({ cameraPTZConfig: { ...cameraPTZConfig, [camera.id]: camera } })
+          setSelectedCamera(null)
         })()
       )
     },
@@ -94,50 +97,115 @@ export function PtzPage() {
       <Content.Header>
         <Title icon={WebcamIcon}>PTZ</Title>
       </Content.Header>
-      <Content.Content className="grow min-h-0 overflow-auto no-scrollbar">
-        <div className="flex flex-col gap-2 w-full min-h-full">
-          <div className="w-full flex flex-row gap-2">
-            <Select
-              isClearable
-              placeholder="Selecione uma câmera"
-              options={Object.values(cameraPTZConfig).map((camera) => ({
-                label: camera.name,
-                value: camera.id
-              }))}
-              value={
-                selectedCamera ? { label: selectedCamera.name, value: selectedCamera.id } : null
-              }
-              onChange={(value) => {
-                if (value) {
-                  setSelectedCamera(cameraPTZConfig[value.value])
-                } else {
-                  setSelectedCamera(null)
-                }
-              }}
-            />
-            <Button
-              variant="primary"
-              onClick={() => addCamera()}
-              type="button"
-              isLoading={isAddingCamera}
-            >
-              <Plus />
-            </Button>
-          </div>
+      <Content.Content className="grow min-h-0 overflow-auto no-scrollbar flex flex-col gap-2">
+        {Object.values(cameraPTZConfig).map((camera) => (
+          <CameraItem
+            key={camera.id}
+            camera={camera}
+            setSelectedCamera={setSelectedCamera}
+            deleteCamera={deleteCamera}
+          />
+        ))}
+        <Button
+          icon={Plus}
+          variant="primary"
+          onClick={() => addCamera()}
+          type="button"
+          isLoading={isAddingCamera}
+          full
+        >
+          Adicionar câmera
+        </Button>
 
+        {selectedCamera && (
+          <>
+            <div className="h-px w-full bg-border my-4" />
+          </>
+        )}
+
+        <Dialog
+          open={!!selectedCamera}
+          title={selectedCamera?.name || 'Novo câmera'}
+          setOpen={(open) => setSelectedCamera(open ? selectedCamera : null)}
+        >
           {selectedCamera && (
-            <>
-              <div className="h-px w-full bg-border my-4" />
-              <FormCamera
-                camera={selectedCamera}
-                saveCamera={saveCamera}
-                deleteCamera={deleteCamera}
-              />
-            </>
+            <FormCamera
+              camera={selectedCamera}
+              saveCamera={saveCamera}
+              deleteCamera={deleteCamera}
+            />
           )}
-        </div>
+        </Dialog>
       </Content.Content>
     </Content.Container>
+  )
+}
+
+function CameraItem({
+  camera,
+  setSelectedCamera,
+  deleteCamera
+}: {
+  camera: CameraPTZConfig
+  setSelectedCamera: (camera: CameraPTZConfig | null) => void
+  deleteCamera: (camera: CameraPTZConfig) => Promise<void>
+}) {
+  const clearImages = useClearImages(camera)
+
+  const { component: confirmDelete, open: openConfirmDelete } = useConfirm({
+    title: 'Tem certeza que deseja deletar a câmera?',
+    description: 'Esta ação irá deletar a câmera e todas as imagens associadas a ela.',
+    labelConfirm: 'Deletar',
+    labelCancel: 'Cancelar',
+    onSubmit: async (confirmed) => {
+      if (confirmed) {
+        clearImages()
+        await deleteCamera(camera)
+      }
+    }
+  })
+
+  const { component: confirmClearImages, open: openConfirmClearImages } = useConfirm({
+    title: 'Tem certeza que deseja limpar as imagens da câmera?',
+    description: 'Esta ação irá limpar todas as imagens associadas a câmera.',
+    labelConfirm: 'Limpar',
+    labelCancel: 'Cancelar',
+    onSubmit: async (confirmed) => {
+      if (confirmed) {
+        clearImages()
+        toast.success('Imagens limpas com sucesso!')
+      }
+    }
+  })
+
+  return (
+    <>
+      <GroupButton.Container className="w-full">
+        <GroupButton.Button className="grow" onClick={() => setSelectedCamera(camera)}>
+          {camera.name || 'Novo câmera'}
+        </GroupButton.Button>
+        <DropdownMenu.Container
+          trigger={
+            <GroupButton.Button className="data-[state=open]:bg-secondary-hover">
+              <EllipsisVertical />
+            </GroupButton.Button>
+          }
+        >
+          <DropdownMenu.Item icon={Edit} onClick={() => setSelectedCamera(camera)}>
+            Editar câmera
+          </DropdownMenu.Item>
+          <DropdownMenu.Item icon={ImageOff} onClick={openConfirmClearImages}>
+            Limpar imagens da câmera
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item icon={Trash} onClick={openConfirmDelete}>
+            Deletar câmera
+          </DropdownMenu.Item>
+        </DropdownMenu.Container>
+      </GroupButton.Container>
+      {confirmDelete}
+      {confirmClearImages}
+    </>
   )
 }
 
@@ -172,6 +240,32 @@ function FormCamera({
     mutationFn: deleteCamera
   })
 
+  const { component: confirmDelete, open: openConfirmDelete } = useConfirm({
+    title: 'Tem certeza que deseja deletar a câmera?',
+    description: 'Esta ação irá deletar a câmera e todas as imagens associadas a ela.',
+    labelConfirm: 'Deletar',
+    labelCancel: 'Cancelar',
+    onSubmit: async (confirmed) => {
+      if (confirmed) {
+        clearImages()
+        await deleteCameraMutation(camera)
+      }
+    }
+  })
+
+  const { component: confirmClearImages, open: openConfirmClearImages } = useConfirm({
+    title: 'Tem certeza que deseja limpar as imagens da câmera?',
+    description: 'Esta ação irá limpar todas as imagens associadas a câmera.',
+    labelConfirm: 'Limpar',
+    labelCancel: 'Cancelar',
+    onSubmit: async (confirmed) => {
+      if (confirmed) {
+        clearImages()
+        toast.success('Imagens limpas com sucesso!')
+      }
+    }
+  })
+
   useEffect(() => {
     reset(camera)
   }, [camera, reset])
@@ -186,76 +280,77 @@ function FormCamera({
   )
 
   return (
-    <form
-      className="flex flex-col gap-2"
-      onSubmit={handleSubmit(async (data) => saveCameraMutation(data))}
-    >
-      <FormControl label="Nome da câmera" error={errors.name?.message}>
-        <TextField {...register('name')} type="text" placeholder="Nome da câmera" />
-      </FormControl>
-      <FormControl label="IP da câmera" error={errors.ip?.message}>
-        <TextField {...register('ip')} type="text" placeholder="IP da câmera" />
-      </FormControl>
-      <FormControl label="Porta da câmera" error={errors.port?.message}>
-        <TextField {...register('port')} type="text" placeholder="Porta da câmera" />
-      </FormControl>
-      <FormControl label="Usuário da câmera" error={errors.user?.message}>
-        <TextField {...register('user')} type="text" placeholder="Usuário da câmera" />
-      </FormControl>
-      <FormControl label="Senha da câmera" error={errors.password?.message}>
-        <TextField {...register('password')} type="text" placeholder="Senha da câmera" />
-      </FormControl>
-      <FormControl label="Limite de presets" error={errors.presetLimit?.message}>
-        <TextField
-          {...register('presetLimit')}
-          type="number"
-          placeholder="Limite de presets da câmera"
-          min={1}
-          max={100}
-        />
-      </FormControl>
-      <FormControl label="Cena do OBS" error={errors.sceneId?.message}>
-        <Controller
-          control={control}
-          name="sceneId"
-          render={({ field: { value, onChange, onBlur } }) => (
-            <Select
-              isClearable
-              options={Object.values(sceneOptions)}
-              value={value ? { label: sceneOptions[value]?.label || '', value } : null}
-              onChange={(value) => onChange(value?.value || null)}
-              onBlur={onBlur}
-              placeholder="Selecione uma cena"
-            />
-          )}
-        />
-      </FormControl>
-      <FormControl label="Cena auxiliar do OBS" error={errors.axSceneId?.message}>
-        <Controller
-          control={control}
-          name="axSceneId"
-          render={({ field: { value, onChange, onBlur } }) => (
-            <Select
-              isClearable
-              options={Object.values(sceneOptions)}
-              value={value ? { label: sceneOptions[value]?.label || '', value } : null}
-              onChange={(value) => onChange(value?.value || null)}
-              onBlur={onBlur}
-              placeholder="Selecione uma cena auxiliar"
-            />
-          )}
-        />
-      </FormControl>
-      <FormControl label="Tempo de transição (ms)" error={errors.transitionTime?.message}>
-        <TextField
-          {...register('transitionTime')}
-          type="number"
-          placeholder="Tempo de transição"
-          min={0}
-          max={10000}
-        />
-      </FormControl>
-      <div className="flex justify-end gap-4">
+    <>
+      <form
+        className="flex flex-col gap-2"
+        onSubmit={handleSubmit(async (data) => saveCameraMutation(data))}
+      >
+        <FormControl label="Nome da câmera" error={errors.name?.message}>
+          <TextField {...register('name')} type="text" placeholder="Nome da câmera" />
+        </FormControl>
+        <FormControl label="IP da câmera" error={errors.ip?.message}>
+          <TextField {...register('ip')} type="text" placeholder="IP da câmera" />
+        </FormControl>
+        <FormControl label="Porta da câmera" error={errors.port?.message}>
+          <TextField {...register('port')} type="text" placeholder="Porta da câmera" />
+        </FormControl>
+        <FormControl label="Usuário da câmera" error={errors.user?.message}>
+          <TextField {...register('user')} type="text" placeholder="Usuário da câmera" />
+        </FormControl>
+        <FormControl label="Senha da câmera" error={errors.password?.message}>
+          <TextField {...register('password')} type="text" placeholder="Senha da câmera" />
+        </FormControl>
+        <FormControl label="Limite de presets" error={errors.presetLimit?.message}>
+          <TextField
+            {...register('presetLimit')}
+            type="number"
+            placeholder="Limite de presets da câmera"
+            min={1}
+            max={100}
+          />
+        </FormControl>
+        <FormControl label="Cena do OBS" error={errors.sceneId?.message}>
+          <Controller
+            control={control}
+            name="sceneId"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <Select
+                isClearable
+                options={Object.values(sceneOptions)}
+                value={value ? { label: sceneOptions[value]?.label || '', value } : null}
+                onChange={(value) => onChange(value?.value || null)}
+                onBlur={onBlur}
+                placeholder="Selecione uma cena"
+              />
+            )}
+          />
+        </FormControl>
+        <FormControl label="Cena auxiliar do OBS" error={errors.axSceneId?.message}>
+          <Controller
+            control={control}
+            name="axSceneId"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <Select
+                isClearable
+                options={Object.values(sceneOptions)}
+                value={value ? { label: sceneOptions[value]?.label || '', value } : null}
+                onChange={(value) => onChange(value?.value || null)}
+                onBlur={onBlur}
+                placeholder="Selecione uma cena auxiliar"
+              />
+            )}
+          />
+        </FormControl>
+        <FormControl label="Tempo de transição (ms)" error={errors.transitionTime?.message}>
+          <TextField
+            {...register('transitionTime')}
+            type="number"
+            placeholder="Tempo de transição"
+            min={0}
+            max={10000}
+          />
+        </FormControl>
+        <div className="h-px w-full bg-border my-4" />
         <Button
           icon={Save}
           type="submit"
@@ -271,22 +366,16 @@ function FormCamera({
           variant="error"
           isLoading={isDeletingCamera}
           disabled={isSavingCamera || isDeletingCamera}
-          onClick={() => deleteCameraMutation(camera)}
+          onClick={openConfirmDelete}
         >
           Apagar
         </Button>
-        <Button
-          icon={Trash}
-          type="button"
-          variant="error"
-          onClick={() => {
-            clearImages()
-            toast.success('Imagens limpas com sucesso!')
-          }}
-        >
+        <Button icon={ImageOff} type="button" variant="error" onClick={openConfirmClearImages}>
           Limpar imagens
         </Button>
-      </div>
-    </form>
+      </form>
+      {confirmDelete}
+      {confirmClearImages}
+    </>
   )
 }

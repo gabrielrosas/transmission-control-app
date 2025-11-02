@@ -2,8 +2,20 @@ import { cn } from '@renderer/libs/cn'
 import { Button, ButtonProps } from './Button'
 
 export const GroupButton = {
-  Container({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <div className={cn('flex flex-row gap-px', className)}>{children}</div>
+  Container({
+    children,
+    className,
+    ref
+  }: {
+    children: React.ReactNode
+    className?: string
+    ref?: React.RefObject<HTMLDivElement>
+  }) {
+    return (
+      <div className={cn('flex flex-row gap-px', className)} ref={ref}>
+        {children}
+      </div>
+    )
   },
   Button({ className, ...props }: ButtonProps) {
     return (

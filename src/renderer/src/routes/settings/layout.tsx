@@ -5,10 +5,22 @@ import { HouseIcon, WebcamIcon, LogOut } from 'lucide-react'
 import { Separator } from '../../components/navbar/Separator'
 import { Page } from '../../components/containers'
 import { useAuth } from '../../hooks/firebase'
-import { DialogConfirm } from '../../components/Dialog'
+import { useConfirm } from '@renderer/hooks/utils/confirm'
 
 export function SettingsLayout() {
   const signOut = useAuth((state) => state.signOut)
+
+  const { component: confirmSignOut, open: openSignOut } = useConfirm({
+    title: 'Tem certeza que deseja sair?',
+    description: 'Esta ação irá desconectar você do sistema.',
+    labelConfirm: 'Sair',
+    labelCancel: 'Cancelar',
+    onSubmit: async (confirmed) => {
+      if (confirmed) {
+        await signOut()
+      }
+    }
+  })
 
   return (
     <Page.Container className="h-full">
@@ -25,26 +37,14 @@ export function SettingsLayout() {
         </Button>
         <div className="flex-1" />
         <Separator />
-        <DialogConfirm
-          trigger={
-            <Button variant="nav">
-              <LogOut size={16} />
-            </Button>
-          }
-          onSubmit={async (confirmed) => {
-            if (confirmed) {
-              await signOut()
-            }
-          }}
-          title="Tem certeza que deseja sair?"
-          description="Esta ação irá desconectar você do sistema."
-          labelConfirm="Sair"
-          labelCancel="Cancelar"
-        />
+        <Button variant="nav" onClick={openSignOut}>
+          <LogOut size={16} />
+        </Button>
       </nav>
       <main className="p-2 pt-[44px] h-full flex flex-col items-center ">
         <Outlet />
       </main>
+      {confirmSignOut}
     </Page.Container>
   )
 }
