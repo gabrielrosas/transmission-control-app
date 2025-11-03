@@ -113,20 +113,24 @@ class CamMock implements CamBase {
 export class CamStore {
   static cams: Record<string, CamBase> = {}
 
-  static async initCam(config: CameraPTZConfig, mainWindow: BrowserWindow) {
+  static async initCam(config: CameraPTZConfig) {
     try {
       console.log('initCam start', config.id)
       if (CamStore.cams[config.id]) {
         console.log('initCam already initialized', config.id)
         if (CamStore.cams[config.id].isConnected) {
-          mainWindow.webContents.send('ptz:connected', config.id)
+          BrowserWindow.getAllWindows().forEach((window) => {
+            window.webContents.send('ptz:connected', config.id)
+          })
         }
         return
       } else {
         const cam = isDev ? new CamMock(config) : new Cam(config)
         CamStore.cams[config.id] = cam
         await cam.connect()
-        mainWindow.webContents.send('ptz:connected', config.id)
+        BrowserWindow.getAllWindows().forEach((window) => {
+          window.webContents.send('ptz:connected', config.id)
+        })
       }
     } catch (error) {
       console.error(error)

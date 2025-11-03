@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
 import { CameraPTZConfig, CamStore } from './Cam'
+import { loadIPCImageCache } from './ImageCache'
 
 function createWindow() {
   // Create the browser window.
@@ -15,6 +16,7 @@ function createWindow() {
     x: screen.getPrimaryDisplay().workAreaSize.width - width,
     y: 0,
     show: false,
+    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -38,8 +40,6 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
-
-  return mainWindow
 }
 
 app.disableHardwareAcceleration()
@@ -58,10 +58,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  const mainWindow = createWindow()
+  createWindow()
 
   ipcMain.handle('ptz:init', (_, config: CameraPTZConfig) => {
-    CamStore.initCam(config, mainWindow)
+    CamStore.initCam(config)
   })
 
   ipcMain.handle('ptz:getPresets', async (_, id: string) => {
@@ -75,6 +75,8 @@ app.whenReady().then(() => {
   ipcMain.handle('clipboard:writeText', async (_, text: string) => {
     return clipboard.writeText(text)
   })
+
+  loadIPCImageCache(ipcMain, app)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

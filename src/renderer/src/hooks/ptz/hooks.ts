@@ -14,12 +14,6 @@ import { useOBS } from '../obs'
 import { useLocalStorage } from 'usehooks-ts'
 import toast from 'react-hot-toast'
 
-type LSPTZImages = {
-  [configId: string]: {
-    [presetId: string]: string
-  }
-}
-
 export type PTZPreset = {
   id: string
   name: string
@@ -48,6 +42,8 @@ export type PTZPresetContextType = {
   clearImage: () => Promise<void>
   image: string | undefined
   inProgress: boolean
+  tooltipEnabled: boolean
+  setTooltipEnabled: (tooltipEnabled: boolean) => void
 }
 
 export const PTZPresetContext = createContext<PTZPresetContextType>({
@@ -56,7 +52,9 @@ export const PTZPresetContext = createContext<PTZPresetContextType>({
   loadImage: () => Promise.resolve(),
   clearImage: () => Promise.resolve(),
   image: undefined,
-  inProgress: false
+  inProgress: false,
+  tooltipEnabled: false,
+  setTooltipEnabled: () => {}
 })
 
 export function useInitPTZ(config: CameraPTZConfig) {
@@ -94,7 +92,13 @@ export function useInitPTZ(config: CameraPTZConfig) {
   }, [allPresets, presetsHidden])
 
   const control = useMemo<PTZContextType>(
-    () => ({ config, presets, inProgress, setInProgress, setPresetsHidden }),
+    () => ({
+      config,
+      presets,
+      inProgress,
+      setInProgress,
+      setPresetsHidden
+    }),
     [config, presets, inProgress, setInProgress, setPresetsHidden]
   )
 
@@ -132,7 +136,19 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
   const programScene = useOBS((state) => state.programScene)
   const getImage = useOBS((state) => state.getImage)
   const isConnected = useOBS((state) => state.isConnected)
-  const [images, setImages] = useLocalStorage<LSPTZImages>('ptz-images', {})
+  const [image, setImage] = useState<string | undefined>(undefined)
+  const [tooltipEnabled, setTooltipEnabled] = useState<boolean>(true)
+
+  useEffect(() => {
+    window.imageCache
+      .get({ folder: `ptz-${config?.id}`, filename: `preset_${preset.id}.png` })
+      .then((image) => {
+        setImage(image)
+      })
+      .catch(() => {
+        setImage(undefined)
+      })
+  }, [config, preset])
 
   const gotoPresetBase = useCallback(
     async (sendToProgram: boolean) => {
@@ -162,13 +178,12 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
         await gotoPresetBase(false)
         await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
         const image = await getImage(config.sceneId)
-        setImages((prev) => ({
-          ...prev,
-          [config.id]: {
-            ...(prev[config.id] || {}),
-            [preset.id]: image
-          }
-        }))
+        await window.imageCache.save({
+          folder: `ptz-${config.id}`,
+          filename: `preset_${preset.id}.png`,
+          base64: image
+        })
+        setImage(image)
         setInProgress(false)
       } else {
         throw new Error('Config not found or not connected')
@@ -180,23 +195,22 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
       success: 'Imagem carregada com sucesso!',
       error: 'Erro ao carregar imagem'
     })
-  }, [config, preset, gotoPresetBase, getImage, setImages, isConnected, setInProgress])
+  }, [config, preset, gotoPresetBase, getImage, isConnected, setInProgress])
 
   const clearImage = useCallback(async () => {
-    if (config) {
-      setImages((prev) => {
-        const prevConfig = prev[config.id] || {}
-        delete prevConfig[preset.id]
-        return {
-          ...prev,
-          [config.id]: prevConfig
-        }
-      })
-      toast.success(`Imagem de ${preset.name} removida com sucesso!`)
-    } else {
-      throw new Error('Config not found')
-    }
-  }, [config, preset, setImages])
+    toast.promise(
+      window.imageCache
+        .clear({ folder: `ptz-${config?.id}`, filename: `preset_${preset.id}.png` })
+        .then(() => {
+          setImage(undefined)
+        }),
+      {
+        loading: `Removendo imagem de ${preset.name}...`,
+        success: `Imagem de ${preset.name} removida com sucesso!`,
+        error: `Erro ao remover imagem de ${preset.name}`
+      }
+    )
+  }, [preset, config])
 
   const gotoPreset = useCallback(
     async (onlyPreview: boolean) => {
@@ -215,20 +229,15 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
     [gotoPresetBase, preset, setInProgress]
   )
 
-  const image = useMemo(() => {
-    if (config && config.sceneId) {
-      return images[config.id]?.[preset.id] || undefined
-    }
-    return undefined
-  }, [images, preset, config])
-
   return {
     inProgress,
     preset,
     gotoPreset,
     loadImage,
     clearImage,
-    image
+    image,
+    tooltipEnabled,
+    setTooltipEnabled
   }
 }
 
@@ -269,18 +278,22 @@ export function usePresetData() {
   }
 }
 
+export function useTooltipPreset() {
+  const { tooltipEnabled, setTooltipEnabled } = useContext(PTZPresetContext)
+  return {
+    tooltipEnabled,
+    setTooltipEnabled
+  }
+}
+
 export function useClearImages(propsConfig?: CameraPTZConfig) {
-  const [, setImages] = useLocalStorage<LSPTZImages>('ptz-images', {})
   return useCallback(
-    (config?: CameraPTZConfig) => {
+    async (config?: CameraPTZConfig) => {
       const configToUse = config || propsConfig
       if (configToUse) {
-        setImages((prev) => ({
-          ...prev,
-          [configToUse.id]: {}
-        }))
+        await window.imageCache.clearFolder({ folder: `ptz-${configToUse.id}` })
       }
     },
-    [propsConfig, setImages]
+    [propsConfig]
   )
 }

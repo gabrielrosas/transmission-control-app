@@ -14,7 +14,8 @@ import {
   PTZPresetControl,
   usePresetData,
   useImagePreset,
-  useHidePreset
+  useHidePreset,
+  useTooltipPreset
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
@@ -159,8 +160,9 @@ function PresetProgramButton() {
 function PresetMenu({ children }: { children: React.ReactNode }) {
   const { loadImage, clearImage, image } = useImagePreset()
   const hidePreset = useHidePreset()
+  const { setTooltipEnabled } = useTooltipPreset()
   return (
-    <ContextMenu.Container trigger={children}>
+    <ContextMenu.Container trigger={children} onOpenChange={(open) => setTooltipEnabled(!open)}>
       {!image ? (
         <ContextMenu.Item icon={Image} onClick={loadImage}>
           Carregar imagem
@@ -185,11 +187,12 @@ function PresetMenu({ children }: { children: React.ReactNode }) {
 
 function PresetTooltip({ children }: { children: React.ReactNode }) {
   const presetData = usePresetData()
+  const { tooltipEnabled } = useTooltipPreset()
   if (!presetData.image) {
     return children
   }
   return (
-    <Tooltip delay={800} skipDelay={0} trigger={<div>{children}</div>}>
+    <Tooltip delay={800} skipDelay={0} trigger={<div>{children}</div>} disabled={!tooltipEnabled}>
       <div className="w-[300px] h-[170px] flex items-center justify-center">
         <img
           src={presetData.image}

@@ -1,17 +1,26 @@
 import * as TooltipBase from '@radix-ui/react-tooltip'
 import { cn } from '@renderer/libs/cn'
+import { useState } from 'react'
 
 type TooltipProps = {
   children: React.ReactNode
   trigger: React.ReactNode
   delay?: number
   skipDelay?: number
+  disabled?: boolean
 }
 
-export function Tooltip({ children, trigger, delay = 700, skipDelay = 300 }: TooltipProps) {
+export function Tooltip({
+  children,
+  trigger,
+  delay = 700,
+  skipDelay = 300,
+  disabled = false
+}: TooltipProps) {
+  const [open, setOpen] = useState(false)
   return (
     <TooltipBase.Provider delayDuration={delay} skipDelayDuration={skipDelay}>
-      <TooltipBase.Root>
+      <TooltipBase.Root open={disabled ? false : open} onOpenChange={setOpen}>
         <TooltipBase.Trigger asChild>{trigger}</TooltipBase.Trigger>
         <TooltipBase.Portal>
           <TooltipBase.Content

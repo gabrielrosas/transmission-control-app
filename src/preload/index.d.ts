@@ -20,5 +20,25 @@ declare global {
     clipboard: {
       writeText: (text: string) => Promise<void>
     }
+    imageCache: {
+      save: ({
+        base64,
+        folder,
+        filename
+      }: {
+        base64: string
+        folder: string
+        filename: string
+      }) => Promise<void>
+      clear: ({ folder, filename }: { folder: string; filename: string }) => Promise<boolean>
+      get: ({
+        folder,
+        filename
+      }: {
+        folder: string
+        filename: string
+      }) => Promise<string | undefined>
+      clearFolder: ({ folder }: { folder: string }) => Promise<boolean>
+    }
   }
 }

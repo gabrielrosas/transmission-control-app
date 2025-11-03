@@ -5,6 +5,7 @@ import { Loader2, LucideIcon } from 'lucide-react'
 type DropdownMenuProps = {
   trigger: React.ReactNode
   children: React.ReactNode
+  onOpenChange?: (open: boolean) => void
 }
 
 type DropdownMenuItemProps = {
@@ -17,9 +18,9 @@ type DropdownMenuItemProps = {
 }
 
 export const ContextMenu = {
-  Container({ trigger, children }: DropdownMenuProps) {
+  Container({ trigger, children, onOpenChange }: DropdownMenuProps) {
     return (
-      <ContextMenuBase.Root modal={false}>
+      <ContextMenuBase.Root modal={false} onOpenChange={onOpenChange}>
         <ContextMenuBase.Trigger asChild>{trigger}</ContextMenuBase.Trigger>
 
         <ContextMenuBase.Portal>
