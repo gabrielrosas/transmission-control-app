@@ -14,13 +14,13 @@ import { getFirestore } from 'firebase/firestore'
 import { useEffect } from 'react'
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyDMDX5jsWausTKqrqQYWubdKFcNr6apg-c',
-  authDomain: 'transmissao-f65a0.firebaseapp.com',
-  projectId: 'transmissao-f65a0',
-  storageBucket: 'transmissao-f65a0.firebasestorage.app',
-  messagingSenderId: '993593537871',
-  appId: '1:993593537871:web:90a58859a0aa8c47a1813a',
-  measurementId: 'G-ND1RB8NRH1'
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 }
 
 export const app = initializeApp(firebaseConfig)

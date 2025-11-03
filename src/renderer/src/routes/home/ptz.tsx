@@ -13,7 +13,8 @@ import {
   useGotoPreset,
   PTZPresetControl,
   usePresetData,
-  useImagePreset
+  useImagePreset,
+  useHidePreset
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
@@ -157,6 +158,7 @@ function PresetProgramButton() {
 
 function PresetMenu({ children }: { children: React.ReactNode }) {
   const { loadImage, clearImage, image } = useImagePreset()
+  const hidePreset = useHidePreset()
   return (
     <ContextMenu.Container trigger={children}>
       {!image ? (
@@ -174,7 +176,7 @@ function PresetMenu({ children }: { children: React.ReactNode }) {
         </>
       )}
       <ContextMenu.Separator />
-      <ContextMenu.Item icon={EyeOff} disabled>
+      <ContextMenu.Item icon={EyeOff} onClick={hidePreset}>
         Ocultar
       </ContextMenu.Item>
     </ContextMenu.Container>

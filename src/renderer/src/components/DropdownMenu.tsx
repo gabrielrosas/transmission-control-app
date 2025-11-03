@@ -81,5 +81,13 @@ export const DropdownMenu = {
 
   Separator() {
     return <DropdownMenuBase.Separator className="h-px bg-secondary my-1" />
+  },
+
+  Label({ children }: { children: React.ReactNode }) {
+    return (
+      <DropdownMenuBase.Label className="text-xs font-medium text-muted-foreground px-2 py-1">
+        {children}
+      </DropdownMenuBase.Label>
+    )
   }
 }

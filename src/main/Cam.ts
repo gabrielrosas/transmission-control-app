@@ -17,7 +17,8 @@ interface CamBase {
   connect: () => Promise<void>
 }
 
-const isDev = false
+const isDev = process.env.PTZ_CAM_DEV === 'true'
+console.log('isDev', isDev)
 
 export class Cam implements CamBase {
   private cam: OnvifCam

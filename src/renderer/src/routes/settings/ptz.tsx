@@ -2,7 +2,7 @@ import { Button } from '@renderer/components/Button'
 import { Content } from '@renderer/components/containers'
 import { TextField, FormControl } from '@renderer/components/form'
 import { Title } from '@renderer/components/titles'
-import { WebcamIcon, Plus, Trash, Save, EllipsisVertical, Edit, ImageOff } from 'lucide-react'
+import { WebcamIcon, Plus, Trash, Save, EllipsisVertical, Edit, ImageOff, Eye } from 'lucide-react'
 import { useConfig } from '@renderer/hooks/config'
 import { CameraPTZConfig, CameraPTZConfigSchema } from '@renderer/schemas/CameraPTZ'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -14,7 +14,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
 
-import { useClearImages } from '@renderer/hooks/ptz'
+import { useClearHiddenPresets, useClearImages } from '@renderer/hooks/ptz'
 import { useConfirm } from '@renderer/hooks/utils/confirm'
 import { Dialog } from '@renderer/components/Dialog'
 import { GroupButton } from '@renderer/components/GroupButton'
@@ -117,12 +117,6 @@ export function PtzPage() {
           Adicionar câmera
         </Button>
 
-        {selectedCamera && (
-          <>
-            <div className="h-px w-full bg-border my-4" />
-          </>
-        )}
-
         <Dialog
           open={!!selectedCamera}
           title={selectedCamera?.name || 'Novo câmera'}
@@ -151,6 +145,7 @@ function CameraItem({
   deleteCamera: (camera: CameraPTZConfig) => Promise<void>
 }) {
   const clearImages = useClearImages(camera)
+  const { hiddenPresets, clearHiddenPresets } = useClearHiddenPresets(camera)
 
   const { component: confirmDelete, open: openConfirmDelete } = useConfirm({
     title: 'Tem certeza que deseja deletar a câmera?',
@@ -196,6 +191,15 @@ function CameraItem({
           </DropdownMenu.Item>
           <DropdownMenu.Item icon={ImageOff} onClick={openConfirmClearImages}>
             Limpar imagens da câmera
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Label>{hiddenPresets.length} Presets ocultos</DropdownMenu.Label>
+          <DropdownMenu.Item
+            icon={Eye}
+            onClick={clearHiddenPresets}
+            disabled={hiddenPresets.length === 0}
+          >
+            Mostrar todos os Presets
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item icon={Trash} onClick={openConfirmDelete}>

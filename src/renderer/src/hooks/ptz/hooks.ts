@@ -1,6 +1,15 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type CameraPTZConfig } from '../../schemas/CameraPTZ'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react'
 import { useOBS } from '../obs'
 import { useLocalStorage } from 'usehooks-ts'
 import toast from 'react-hot-toast'
@@ -21,13 +30,15 @@ export type PTZContextType = {
   presets: PTZPreset[]
   inProgress: boolean
   setInProgress: (inProgress: boolean) => void
+  setPresetsHidden: Dispatch<SetStateAction<string[]>>
 }
 
 export const PTZContext = createContext<PTZContextType>({
   config: null,
   presets: [],
   inProgress: false,
-  setInProgress: () => {}
+  setInProgress: () => {},
+  setPresetsHidden: () => {}
 })
 
 export type PTZPresetContextType = {
@@ -50,6 +61,10 @@ export const PTZPresetContext = createContext<PTZPresetContextType>({
 
 export function useInitPTZ(config: CameraPTZConfig) {
   const [connected, setConnected] = useState<boolean>(false)
+  const [presetsHidden, setPresetsHidden] = useLocalStorage<string[]>(
+    `ptz-${config.id}-presets-hidden`,
+    []
+  )
 
   useEffect(() => {
     window.ptz.init(config)
@@ -70,18 +85,43 @@ export function useInitPTZ(config: CameraPTZConfig) {
     queryFn: () => window.ptz.getPresets(config.id)
   })
 
-  const presets = useMemo(() => {
+  const allPresets = useMemo(() => {
     return data?.slice(0, config.presetLimit || 100) || []
   }, [config, data])
 
+  const presets = useMemo(() => {
+    return allPresets.filter((preset) => !presetsHidden.includes(preset.id))
+  }, [allPresets, presetsHidden])
+
+  const control = useMemo<PTZContextType>(
+    () => ({ config, presets, inProgress, setInProgress, setPresetsHidden }),
+    [config, presets, inProgress, setInProgress, setPresetsHidden]
+  )
+
   return {
-    control: { config, presets, inProgress, setInProgress },
+    control,
     isLoading: isFetching || !connected,
     isRefetching,
     presets,
+    allPresets,
     inProgress,
     error,
     refetch
+  }
+}
+
+export function useClearHiddenPresets(config: CameraPTZConfig) {
+  const [hiddenPresets, setHiddenPresets] = useLocalStorage<string[]>(
+    `ptz-${config.id}-presets-hidden`,
+    []
+  )
+  const clearHiddenPresets = useCallback(() => {
+    setHiddenPresets([])
+  }, [setHiddenPresets])
+
+  return {
+    hiddenPresets,
+    clearHiddenPresets
   }
 }
 
@@ -209,6 +249,14 @@ export function useImagePreset() {
     image,
     clearImage
   }
+}
+
+export function useHidePreset() {
+  const { preset } = useContext(PTZPresetContext)
+  const { setPresetsHidden } = useContext(PTZContext)
+  return useCallback(() => {
+    setPresetsHidden((prev) => [...prev, preset!.id])
+  }, [setPresetsHidden, preset])
 }
 
 export function usePresetData() {
