@@ -1,5 +1,5 @@
 import { Cam as OnvifCam } from 'onvif/promises'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, IpcMain } from 'electron'
 
 export type CameraPTZConfig = {
   id: string
@@ -144,4 +144,18 @@ export class CamStore {
     }
     return CamStore.cams[id]
   }
+}
+
+export function loadIPCCameraPTZ(ipcMain: IpcMain) {
+  ipcMain.handle('ptz:init', (_, config: CameraPTZConfig) => {
+    CamStore.initCam(config)
+  })
+
+  ipcMain.handle('ptz:getPresets', async (_, id: string) => {
+    return CamStore.getCam(id).getPresets()
+  })
+
+  ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
+    return CamStore.getCam(id).goto(preset)
+  })
 }

@@ -1,9 +1,18 @@
-import { app, shell, BrowserWindow, ipcMain, screen, clipboard } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  screen,
+  clipboard,
+  Menu,
+  globalShortcut
+} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-import { CameraPTZConfig, CamStore } from './Cam'
+import { loadIPCCameraPTZ } from './Cam'
 import { loadIPCImageCache } from './ImageCache'
 
 function createWindow() {
@@ -12,15 +21,29 @@ function createWindow() {
   const width = 400
   const mainWindow = new BrowserWindow({
     width,
+    minWidth: width,
+    minHeight: screen.getPrimaryDisplay().workAreaSize.height,
     height: screen.getPrimaryDisplay().workAreaSize.height,
     x: screen.getPrimaryDisplay().workAreaSize.width - width,
     y: 0,
     show: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
+    darkTheme: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
+    }
+  })
+  mainWindow.removeMenu()
+
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    if (mainWindow) {
+      if (mainWindow.webContents.isDevToolsOpened()) {
+        mainWindow.webContents.closeDevTools()
+      } else {
+        mainWindow.webContents.openDevTools({ mode: 'right' })
+      }
     }
   })
 
@@ -32,6 +55,18 @@ function createWindow() {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Arquivo',
+      submenu: [{ role: 'quit' }]
+    },
+    {
+      label: 'Visualizar',
+      submenu: [{ role: 'toggleDevTools', accelerator: 'CommandOrControl+Shift+I' }]
+    }
+  ])
+  Menu.setApplicationMenu(menu)
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
@@ -60,21 +95,11 @@ app.whenReady().then(() => {
 
   createWindow()
 
-  ipcMain.handle('ptz:init', (_, config: CameraPTZConfig) => {
-    CamStore.initCam(config)
-  })
-
-  ipcMain.handle('ptz:getPresets', async (_, id: string) => {
-    return CamStore.getCam(id).getPresets()
-  })
-
-  ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
-    return CamStore.getCam(id).goto(preset)
-  })
-
   ipcMain.handle('clipboard:writeText', async (_, text: string) => {
     return clipboard.writeText(text)
   })
+
+  loadIPCCameraPTZ(ipcMain)
 
   loadIPCImageCache(ipcMain, app)
 
