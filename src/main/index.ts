@@ -5,7 +5,7 @@ import icon from '../../resources/icon.png?asset'
 
 import { CameraPTZConfig, CamStore } from './Cam'
 
-function createWindow(): void {
+function createWindow() {
   // Create the browser window.
 
   const width = 400
@@ -38,6 +38,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 app.disableHardwareAcceleration()
@@ -56,8 +58,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  ipcMain.handle('ptz:init', async (_, config: CameraPTZConfig) => {
-    return CamStore.initCam(config)
+  const mainWindow = createWindow()
+
+  ipcMain.handle('ptz:init', (_, config: CameraPTZConfig) => {
+    CamStore.initCam(config, mainWindow)
   })
 
   ipcMain.handle('ptz:getPresets', async (_, id: string) => {
@@ -71,8 +75,6 @@ app.whenReady().then(() => {
   ipcMain.handle('clipboard:writeText', async (_, text: string) => {
     return clipboard.writeText(text)
   })
-
-  createWindow()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

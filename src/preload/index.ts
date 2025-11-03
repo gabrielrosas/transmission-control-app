@@ -14,7 +14,12 @@ type CameraPTZConfig = {
 const ptz = {
   init: (config: CameraPTZConfig) => ipcRenderer.invoke('ptz:init', config),
   getPresets: (id: string) => ipcRenderer.invoke('ptz:getPresets', id),
-  goto: (values: { id: string; preset: string }) => ipcRenderer.invoke('ptz:goto', values)
+  goto: (values: { id: string; preset: string }) => ipcRenderer.invoke('ptz:goto', values),
+  onConnected: (callback: (id: string) => void) => {
+    const listener = (_event, payload) => callback(payload)
+    ipcRenderer.on('ptz:connected', listener)
+    return () => ipcRenderer.off('ptz:connected', listener)
+  }
 }
 
 const clipboard = {

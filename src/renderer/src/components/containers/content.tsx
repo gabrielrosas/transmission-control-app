@@ -120,22 +120,22 @@ export function Header({ children, className, border, ...props }: HeaderProps) {
 
 const ContentVariants = cva('p-4 flex-1', {
   variants: {
-    variant: {
-      default: ''
+    hidden: {
+      true: 'hidden',
+      false: ''
     }
   },
   defaultVariants: {
-    variant: 'default'
+    hidden: false
   }
 })
 
 type ContentProps = {
   children: React.ReactNode
   className?: string
-} & VariantProps<typeof ContentVariants>
+}
 
-export function Content({ children, className, ...props }: ContentProps) {
+export function Content({ children, className }: ContentProps) {
   const { colapsed } = useContext(ContainerContext)
-  if (colapsed === true) return null
-  return <div className={cn(ContentVariants(props), className)}>{children}</div>
+  return <div className={cn(ContentVariants({ hidden: !!colapsed }), className)}>{children}</div>
 }

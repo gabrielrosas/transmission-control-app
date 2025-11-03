@@ -1,6 +1,6 @@
 import { Button } from '../components/Button'
-import { useAuth } from '../hooks/firebase'
-import { useEffect, useState } from 'react'
+import { useAuth, useAuthInit } from '../hooks/firebase'
+import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useConfigInit } from '../hooks/config'
 import { TextField } from '@renderer/components/form/TextField'
@@ -104,15 +104,8 @@ function SignUpSignIn() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const load = useAuth((state) => state.load)
-  const isSignedIn = useAuth((state) => state.user !== null)
-  const isLoad = useAuth((state) => state.isLoad)
-
+  const { isLoad, isSignedIn } = useAuthInit()
   const configLoad = useConfigInit()
-
-  useEffect(() => {
-    load()
-  }, [])
 
   if (!isLoad) {
     return <Loading />

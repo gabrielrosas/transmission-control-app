@@ -1,4 +1,5 @@
 import { Cam as OnvifCam } from 'onvif/promises'
+import { BrowserWindow } from 'electron'
 
 export type CameraPTZConfig = {
   id: string
@@ -16,7 +17,7 @@ interface CamBase {
   connect: () => Promise<void>
 }
 
-const isDev = true
+const isDev = false
 
 export class Cam implements CamBase {
   private cam: OnvifCam
@@ -111,18 +112,21 @@ class CamMock implements CamBase {
 export class CamStore {
   static cams: Record<string, CamBase> = {}
 
-  static async initCam(config: CameraPTZConfig) {
+  static async initCam(config: CameraPTZConfig, mainWindow: BrowserWindow) {
     try {
+      console.log('initCam start', config.id)
       if (CamStore.cams[config.id]) {
-        if (!CamStore.cams[config.id].isConnected) {
-          await CamStore.cams[config.id].connect()
+        console.log('initCam already initialized', config.id)
+        if (CamStore.cams[config.id].isConnected) {
+          mainWindow.webContents.send('ptz:connected', config.id)
         }
-        return CamStore.cams[config.id].getPresets()
+        return
+      } else {
+        const cam = isDev ? new CamMock(config) : new Cam(config)
+        CamStore.cams[config.id] = cam
+        await cam.connect()
+        mainWindow.webContents.send('ptz:connected', config.id)
       }
-      const cam = isDev ? new CamMock(config) : new Cam(config)
-      CamStore.cams[config.id] = cam
-      await cam.connect()
-      return cam.getPresets()
     } catch (error) {
       console.error(error)
       throw error

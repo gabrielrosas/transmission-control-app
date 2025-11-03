@@ -12,9 +12,10 @@ declare global {
   interface Window {
     electron: ElectronAPI
     ptz: {
-      init: (config: CameraPTZConfig) => Promise<{ id: string; name: string }[]>
+      init: (config: CameraPTZConfig) => void
       getPresets: (id: string) => Promise<{ id: string; name: string }[]>
       goto: ({ id, preset }: { id: string; preset: string }) => Promise<void>
+      onConnected: (callback: (id: string) => void) => () => void
     }
     clipboard: {
       writeText: (text: string) => Promise<void>

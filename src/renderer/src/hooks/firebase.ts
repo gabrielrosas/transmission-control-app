@@ -3,14 +3,15 @@ import { create } from 'zustand'
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import {
-  GoogleAuthProvider,
   getAuth,
   signInWithEmailAndPassword,
   signOut,
   createUserWithEmailAndPassword,
-  type User
+  type User,
+  onAuthStateChanged
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { useEffect } from 'react'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyDMDX5jsWausTKqrqQYWubdKFcNr6apg-c',
@@ -24,8 +25,8 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 export const analytics = getAnalytics(app)
-export const provider = new GoogleAuthProvider()
 export const db = getFirestore(app)
+const auth = getAuth()
 
 type AuthState = {
   user: User | null
@@ -33,38 +34,42 @@ type AuthState = {
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
-  load: () => Promise<void>
+  setAuth: (user: User | null) => void
 }
 
-export const useAuth = create<AuthState>((set) => ({
+export const useAuth = create<AuthState>((set, get) => ({
   user: null,
   isLoad: false,
-  load: async () => {
-    const auth = getAuth()
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    if (auth.currentUser) {
-      set({ user: auth.currentUser, isLoad: true })
-    } else {
-      set({ user: null, isLoad: true })
-    }
-  },
+  setAuth: (user: User | null) => set({ user: user, isLoad: true }),
   signUp: async (email: string, password: string) => {
     const auth = getAuth()
-    const result = await createUserWithEmailAndPassword(auth, email, password)
-    set({ user: result.user, isLoad: true })
+    await createUserWithEmailAndPassword(auth, email, password)
   },
   signIn: async (email: string, password: string) => {
-    const auth = getAuth()
-    if (auth.currentUser) {
-      set({ user: auth.currentUser, isLoad: true })
-    } else {
-      const result = await signInWithEmailAndPassword(auth, email, password)
-      set({ user: result.user, isLoad: true })
+    const user = get().user
+    if (!user) {
+      await signInWithEmailAndPassword(auth, email, password)
     }
   },
   signOut: async () => {
-    const auth = getAuth()
     await signOut(auth)
-    set({ user: null, isLoad: true })
   }
 }))
+
+export function useAuthInit() {
+  const isLoad = useAuth((state) => state.isLoad)
+  const user = useAuth((state) => state.user)
+  const setAuth = useAuth((state) => state.setAuth)
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuth(user)
+      } else {
+        setAuth(null)
+      }
+    })
+    return () => unsub()
+  }, [])
+
+  return { isLoad, isSignedIn: user !== null }
+}

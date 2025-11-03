@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type CameraPTZConfig } from '../../schemas/CameraPTZ'
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useOBS } from '../obs'
 import { useLocalStorage } from 'usehooks-ts'
 import toast from 'react-hot-toast'
@@ -49,11 +49,25 @@ export const PTZPresetContext = createContext<PTZPresetContextType>({
 })
 
 export function useInitPTZ(config: CameraPTZConfig) {
+  const [connected, setConnected] = useState<boolean>(false)
+
+  useEffect(() => {
+    window.ptz.init(config)
+    const unsub = window.ptz.onConnected((id) => {
+      if (id === config.id) {
+        setConnected(true)
+      }
+    })
+    return () => unsub()
+  }, [])
+
   const [inProgress, setInProgress] = useState<boolean>(false)
   const { data, isFetching, isRefetching, error, refetch } = useQuery({
     queryKey: ['ptz', config.id],
+    enabled: connected,
+    refetchOnWindowFocus: false,
     retry: 3,
-    queryFn: () => window.ptz.init(config)
+    queryFn: () => window.ptz.getPresets(config.id)
   })
 
   const presets = useMemo(() => {
@@ -62,7 +76,7 @@ export function useInitPTZ(config: CameraPTZConfig) {
 
   return {
     control: { config, presets, inProgress, setInProgress },
-    isLoading: isFetching,
+    isLoading: isFetching || !connected,
     isRefetching,
     presets,
     inProgress,

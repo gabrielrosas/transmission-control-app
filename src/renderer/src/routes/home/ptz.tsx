@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Content } from '@renderer/components/containers'
 import { ContextMenu } from '@renderer/components/ContextMenu'
 import { GroupButton } from '@renderer/components/GroupButton'
@@ -57,37 +58,54 @@ export function PtzCard({ camera, selected, changeColapsed }: PtzCardProps) {
         </Subtitle>
       </Content.Header>
       <PTZControl control={control}>
-        {isLoading ? (
-          <Content.Content className="w-full h-full flex items-center justify-center">
-            <Loader2 className="size-4 animate-spin" />
-          </Content.Content>
-        ) : (
-          <Content.Content className="p-0 grow min-h-0">
-            {error ? (
-              <div className="p-4 flex flex-col items-center justify-center w-full h-full gap-4">
-                <ul className="w-full border border-border rounded-md p-2 text-sm opacity-50">
-                  <li className="text-center">IP: {camera.ip}</li>
-                  <li className="text-center">Porta: {camera.port}</li>
-                  <li className="text-center">Usuário: {camera.user}</li>
-                  <li className="text-center">Senha: {camera.password}</li>
-                </ul>
-                <p className="text-error text-sm text-center w-full p-4 bg-error/10 rounded-md">
-                  Erro ao conectar à câmera: {error.message}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto no-scrollbar">
-                {presets.map((preset) => (
-                  <Preset key={preset.id} preset={preset} />
-                ))}
-              </div>
-            )}
-          </Content.Content>
-        )}
+        <Content.Content className="p-0 grow min-h-0">
+          <PtzCardContent isLoading={isLoading} error={error} presets={presets} camera={camera} />
+        </Content.Content>
       </PTZControl>
     </Content.Container>
   )
 }
+
+type ContentProps = {
+  isLoading: boolean
+  error: Error | null
+  presets: PTZPreset[]
+  camera: CameraPTZConfig
+}
+const PtzCardContent = memo(({ isLoading, error, presets, camera }: ContentProps) => {
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2 className="size-4 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 flex flex-col items-center justify-center w-full h-full gap-4">
+        <ul className="w-full border border-border rounded-md p-2 text-sm opacity-50">
+          <li className="text-center">IP: {camera.ip}</li>
+          <li className="text-center">Porta: {camera.port}</li>
+          <li className="text-center">Usuário: {camera.user}</li>
+          <li className="text-center">Senha: {camera.password}</li>
+        </ul>
+        <p className="text-error text-sm text-center w-full p-4 bg-error/10 rounded-md">
+          Erro ao conectar à câmera: {error.message}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-2 p-2 h-full w-full overflow-auto no-scrollbar">
+      {presets.map((preset) => (
+        <Preset key={preset.id} preset={preset} />
+      ))}
+    </div>
+  )
+})
+PtzCardContent.displayName = 'PtzCardContent'
 
 function Preset({ preset }: { preset: PTZPreset }) {
   return (
