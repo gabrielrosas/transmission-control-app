@@ -16,7 +16,7 @@ win:
   executableName: Transmissão Control App
   target: portable
 portable:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}${version}.${ext}
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -26,7 +26,7 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}.${ext}
 linux:
   target:
     - AppImage
@@ -35,7 +35,7 @@ linux:
   maintainer: gabrielrosas.com
   category: Utility
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-${version}.${ext}
 npmRebuild: false
 publish:
   provider: generic
