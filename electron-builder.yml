@@ -16,7 +16,7 @@ win:
   executableName: Transmissão Control App
   target: portable
 portable:
-  artifactName: ${productName}${version}.${ext}
+  artifactName: ${productName}-${version}.${ext}
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
