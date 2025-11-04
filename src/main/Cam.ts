@@ -71,6 +71,8 @@ export class Cam implements CamBase {
       }
       const presets: Record<string, { name: string }> = await this.cam.getPresets()
 
+      sendMessage('ptz:logs', { configId: this.config.id, logs: { presets } })
+
       this.presets = Object.entries(presets).map(([id, preset]) => ({
         id,
         name: preset.name
