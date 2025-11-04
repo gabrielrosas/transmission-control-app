@@ -1,5 +1,5 @@
 appId: com.gabrielrosas.transmission-control-app
-productName: Transmissão Control App
+productName: Transmission Control App
 directories:
   buildResources: build
 files:
@@ -13,7 +13,7 @@ asar: true
 asarUnpack:
   - resources/**
 win:
-  executableName: Transmissão Control App
+  executableName: Transmission Control App
   target: portable
 portable:
   artifactName: ${productName}-${version}.${ext}

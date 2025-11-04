@@ -16,8 +16,6 @@ import { loadIPCCameraPTZ } from './Cam'
 import { loadIPCImageCache } from './ImageCache'
 
 function createWindow() {
-  // Create the browser window.
-
   const width = 400
   const mainWindow = new BrowserWindow({
     width,
@@ -35,7 +33,6 @@ function createWindow() {
       sandbox: false
     }
   })
-  mainWindow.removeMenu()
 
   globalShortcut.register('CommandOrControl+Shift+I', () => {
     if (mainWindow) {
@@ -56,17 +53,21 @@ function createWindow() {
     return { action: 'deny' }
   })
 
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'Arquivo',
-      submenu: [{ role: 'quit' }]
-    },
-    {
-      label: 'Visualizar',
-      submenu: [{ role: 'toggleDevTools', accelerator: 'CommandOrControl+Shift+I' }]
-    }
-  ])
-  Menu.setApplicationMenu(menu)
+  if (process.platform !== 'win32' && process.platform !== 'linux') {
+    const menu = Menu.buildFromTemplate([
+      {
+        label: 'Arquivo',
+        submenu: [{ role: 'quit', label: 'Fechar' }]
+      },
+      {
+        label: 'Visualizar',
+        submenu: [{ role: 'toggleDevTools', accelerator: 'CommandOrControl+Shift+I' }]
+      }
+    ])
+    Menu.setApplicationMenu(menu)
+  } else {
+    mainWindow.removeMenu()
+  }
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
@@ -77,6 +78,7 @@ function createWindow() {
   }
 }
 
+app.setName('Transmission Control App')
 app.disableHardwareAcceleration()
 
 // This method will be called when Electron has finished

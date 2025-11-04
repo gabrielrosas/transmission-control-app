@@ -87,7 +87,7 @@
     transform: translateY(0);
   }
 }
-,
+
 @keyframes slideLeftAndFade {
   from {
     opacity: 0;
@@ -98,7 +98,7 @@
     transform: translateX(0);
   }
 }
-,
+
 @keyframes slideUpAndFade {
   from {
     opacity: 0;
@@ -109,7 +109,7 @@
     transform: translateY(0);
   }
 }
-,
+
 @keyframes slideRightAndFade {
   from {
     opacity: 0;
