@@ -19,6 +19,11 @@ const ptz = {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('ptz:connected', listener)
     return () => ipcRenderer.off('ptz:connected', listener)
+  },
+  onEvents: (callback: (event: { configId: string; event: string }) => void) => {
+    const listener = (_event, payload) => callback(payload)
+    ipcRenderer.on('ptz:events', listener)
+    return () => ipcRenderer.off('ptz:events', listener)
   }
 }
 

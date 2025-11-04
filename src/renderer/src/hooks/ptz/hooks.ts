@@ -66,12 +66,20 @@ export function useInitPTZ(config: CameraPTZConfig) {
 
   useEffect(() => {
     window.ptz.init(config)
+    const unsubEvents = window.ptz.onEvents((event) => {
+      if (event.configId === config.id) {
+        console.log(`[PTZ] ${config.id} - ${event.event}`)
+      }
+    })
     const unsub = window.ptz.onConnected((id) => {
       if (id === config.id) {
         setConnected(true)
       }
     })
-    return () => unsub()
+    return () => {
+      unsub()
+      unsubEvents()
+    }
   }, [])
 
   const [inProgress, setInProgress] = useState<boolean>(false)

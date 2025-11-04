@@ -1,6 +1,12 @@
 import { Cam as OnvifCam } from 'onvif/promises'
 import { BrowserWindow, IpcMain } from 'electron'
 
+function sendMessage(message: string, payload: unknown) {
+  BrowserWindow.getAllWindows().forEach((window) => {
+    window.webContents.send(message, payload)
+  })
+}
+
 export type CameraPTZConfig = {
   id: string
   name: string
@@ -38,8 +44,16 @@ export class Cam implements CamBase {
 
   async connect() {
     try {
-      await this.cam.connect()
-      this.isConnected = true
+      if (!this.isConnected) {
+        await this.cam.connect()
+        this.isConnected = true
+        this.cam.on('event', (event) => {
+          sendMessage('ptz:events', { configId: this.config.id, event: JSON.stringify(event) })
+        })
+      }
+      if (this.isConnected) {
+        sendMessage('ptz:connected', this.config.id)
+      }
     } catch (error) {
       console.error(error)
       this.isConnected = false
@@ -76,37 +90,43 @@ export class Cam implements CamBase {
 }
 
 class CamMock implements CamBase {
+  private config: CameraPTZConfig
   isConnected: boolean = true
-  error: boolean = false
 
   constructor(config: CameraPTZConfig) {
-    if (config.ip === '0.0.0.0') {
-      this.error = true
-    }
-    this.isConnected = false
+    this.config = config
   }
   async getPresets() {
-    console.log('getPresets mock start')
     await new Promise((resolve) => setTimeout(resolve, 2000))
     const presets = Array.from({ length: 30 }, (_, i) => ({
       id: (i + 1).toString(),
       name: `Preset ${i + 1}`
     }))
-    console.log('getPresets mock done')
     return presets
   }
   async goto(preset: string) {
-    console.log('goto mock start', preset)
+    sendMessage('ptz:events', {
+      configId: this.config.id,
+      event: 'Goto preset ' + preset + ' started'
+    })
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    console.log('goto mock done', preset)
+    sendMessage('ptz:events', {
+      configId: this.config.id,
+      event: 'Goto preset ' + preset + ' done'
+    })
   }
   async connect() {
-    if (this.error) {
-      const error = new Error('Error connecting to camera')
-      console.error(error)
-      throw error
+    if (!this.isConnected) {
+      if (this.config.ip === '1.1.1.1') {
+        const error = new Error('Error connecting to camera')
+        console.error(error)
+        throw error
+      }
+      this.isConnected = true
     }
-    this.isConnected = true
+    if (this.isConnected) {
+      sendMessage('ptz:connected', this.config.id)
+    }
   }
 }
 
@@ -118,19 +138,12 @@ export class CamStore {
       console.log('initCam start', config.id)
       if (CamStore.cams[config.id]) {
         console.log('initCam already initialized', config.id)
-        if (CamStore.cams[config.id].isConnected) {
-          BrowserWindow.getAllWindows().forEach((window) => {
-            window.webContents.send('ptz:connected', config.id)
-          })
-        }
+        await CamStore.cams[config.id].connect()
         return
       } else {
-        const cam = isDev ? new CamMock(config) : new Cam(config)
-        CamStore.cams[config.id] = cam
-        await cam.connect()
-        BrowserWindow.getAllWindows().forEach((window) => {
-          window.webContents.send('ptz:connected', config.id)
-        })
+        console.log('initializing cam', config.id)
+        CamStore.cams[config.id] = isDev ? new CamMock(config) : new Cam(config)
+        await CamStore.cams[config.id].connect()
       }
     } catch (error) {
       console.error(error)
