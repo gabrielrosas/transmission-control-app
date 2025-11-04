@@ -47,13 +47,16 @@ export class Cam implements CamBase {
       if (!this.isConnected) {
         await this.cam.connect()
         this.isConnected = true
-        this.cam.on('event', (event) => {
-          sendMessage('ptz:events', { configId: this.config.id, event: JSON.stringify(event) })
-        })
       }
       if (this.isConnected) {
         sendMessage('ptz:connected', this.config.id)
       }
+
+      setInterval(() => {
+        this.cam.getStatus().then((status) => {
+          sendMessage('ptz:logs', { configId: this.config.id, logs: status })
+        })
+      }, 1000)
     } catch (error) {
       console.error(error)
       this.isConnected = false
@@ -82,6 +85,8 @@ export class Cam implements CamBase {
   async goto(preset: string) {
     try {
       await this.cam.gotoPreset({ preset })
+      const status = await this.cam.getStatus()
+      sendMessage('ptz:logs', { configId: this.config.id, logs: status })
     } catch (error) {
       console.error(error)
       throw error
@@ -105,14 +110,14 @@ class CamMock implements CamBase {
     return presets
   }
   async goto(preset: string) {
-    sendMessage('ptz:events', {
+    sendMessage('ptz:logs', {
       configId: this.config.id,
-      event: 'Goto preset ' + preset + ' started'
+      logs: 'Goto preset ' + preset + ' started'
     })
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    sendMessage('ptz:events', {
+    sendMessage('ptz:logs', {
       configId: this.config.id,
-      event: 'Goto preset ' + preset + ' done'
+      logs: 'Goto preset ' + preset + ' done'
     })
   }
   async connect() {

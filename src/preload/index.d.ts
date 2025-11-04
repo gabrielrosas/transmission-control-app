@@ -16,7 +16,7 @@ declare global {
       getPresets: (id: string) => Promise<{ id: string; name: string }[]>
       goto: ({ id, preset }: { id: string; preset: string }) => Promise<void>
       onConnected: (callback: (id: string) => void) => () => void
-      onEvents: (callback: (event: { configId: string; event: string }) => void) => () => void
+      onLogs: (callback: (event: { configId: string; logs: unknown }) => void) => () => void
     }
     clipboard: {
       writeText: (text: string) => Promise<void>

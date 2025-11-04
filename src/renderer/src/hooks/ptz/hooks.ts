@@ -66,9 +66,9 @@ export function useInitPTZ(config: CameraPTZConfig) {
 
   useEffect(() => {
     window.ptz.init(config)
-    const unsubEvents = window.ptz.onEvents((event) => {
+    const unsubEvents = window.ptz.onLogs((event) => {
       if (event.configId === config.id) {
-        console.log(`[PTZ] ${config.id} - ${event.event}`)
+        console.log(`[PTZ] ${config.id}`, event.logs)
       }
     })
     const unsub = window.ptz.onConnected((id) => {
