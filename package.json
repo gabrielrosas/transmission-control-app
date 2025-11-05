@@ -2,7 +2,7 @@
   "name": "transmission-control-app",
   "productName": "Transmission Control App",
   "executableName": "Transmission Control App",
-  "version": "1.0.2-17",
+  "version": "1.0.2-18",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
