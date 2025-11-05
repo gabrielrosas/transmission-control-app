@@ -176,7 +176,7 @@ export function useClearHiddenPresets(config: CameraPTZConfig) {
 }
 
 export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
-  const { config, inProgress, setInProgress, position } = useContext(PTZContext)
+  const { config, inProgress, setInProgress, position, setPosition } = useContext(PTZContext)
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
   const programScene = useOBS((state) => state.programScene)
@@ -230,20 +230,23 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
           await window.ptz.goto({ id: config.id, preset: preset.id })
           if (sendToProgram && config.sceneId) {
             await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
-            const currentPosition = await window.ptz.getPosition(config.id)
-            setPresetPosition(currentPosition)
+            const currentPosition1 = await window.ptz.getPosition(config.id)
+            setPresetPosition(currentPosition1)
+            setPosition(currentPosition1)
             await changeProgramScene(config.sceneId)
           } else {
             new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500)).then(
               async () => {
-                const currentPosition = await window.ptz.getPosition(config.id)
-                setPresetPosition(currentPosition)
+                const currentPosition2 = await window.ptz.getPosition(config.id)
+                setPresetPosition(currentPosition2)
+                setPosition(currentPosition2)
               }
             )
           }
         } else {
           if (sendToProgram && config.sceneId) {
             await changeProgramScene(config.sceneId)
+            setPosition(currentPosition)
           }
         }
       } else {
@@ -257,7 +260,8 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
       changePreviewScene,
       programScene,
       setPresetPosition,
-      presetPosition
+      presetPosition,
+      setPosition
     ]
   )
 
