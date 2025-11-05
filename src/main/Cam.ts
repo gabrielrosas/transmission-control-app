@@ -89,12 +89,6 @@ export class Cam implements CamBase {
 
   async getPresets() {
     try {
-      const configs = await this.cam.getConfigs()
-      sendMessage('ptz:logs', { configId: this.config.id, logs: { configs } })
-    } catch (error) {
-      console.error(error)
-    }
-    try {
       const presets: Record<string, PTZPresetBase> = await this.cam.getPresets()
       this.presets = Object.entries(presets).map(([id, preset]) => ({
         id,

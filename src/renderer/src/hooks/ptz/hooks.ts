@@ -182,10 +182,14 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
   const isConnected = useOBS((state) => state.isConnected)
   const [image, setImage] = useState<string | undefined>(undefined)
   const [tooltipEnabled, setTooltipEnabled] = useState<boolean>(true)
+  const [presetPosition, setPresetPosition] = useLocalStorage<PTZPosition | undefined>(
+    `ptz-${config?.id}-presets-position-${preset.id}`,
+    undefined
+  )
 
   const selectedPreset = useMemo(() => {
-    if (position && config && config.positionRefreshTime) {
-      if (comparePosition(preset.position, position)) {
+    if (presetPosition && position && config && config.positionRefreshTime) {
+      if (comparePosition(presetPosition, position)) {
         if (previewScene?.id === config.sceneId) {
           return 'preview'
         }
@@ -195,7 +199,7 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
       }
     }
     return undefined
-  }, [preset, position, previewScene, programScene, config])
+  }, [presetPosition, position, previewScene, programScene, config])
 
   useEffect(() => {
     window.imageCache
@@ -218,16 +222,19 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
           await changePreviewScene(config.sceneId)
         }
         const currentPosition = await window.ptz.getPosition(config.id)
-        console.log({ currentPosition, presetPosition: preset.position })
-        if (!comparePosition(currentPosition, preset.position)) {
+        if (presetPosition && !comparePosition(currentPosition, presetPosition)) {
           const position = await window.ptz.goto({ id: config.id, preset: preset.id })
           setPosition(position)
           if (sendToProgram && config.sceneId) {
             await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
+            setPresetPosition(currentPosition)
             await changeProgramScene(config.sceneId)
+          } else {
+            new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500)).then(() => {
+              setPresetPosition(currentPosition)
+            })
           }
         } else {
-          setPosition(currentPosition)
           if (sendToProgram && config.sceneId) {
             await changeProgramScene(config.sceneId)
           }
@@ -236,7 +243,16 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
         throw new Error('Config not found')
       }
     },
-    [config, preset, changeProgramScene, changePreviewScene, programScene, setPosition]
+    [
+      config,
+      preset,
+      changeProgramScene,
+      changePreviewScene,
+      programScene,
+      setPosition,
+      setPresetPosition,
+      presetPosition
+    ]
   )
 
   const loadImage = useCallback(async () => {
