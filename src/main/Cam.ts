@@ -150,7 +150,12 @@ class CamMock implements CamBase {
     await new Promise((resolve) => setTimeout(resolve, 2000))
     const presets = Array.from({ length: 30 }, (_, i) => ({
       id: (i + 1).toString(),
-      name: `Preset ${i + 1}`
+      name: `Preset ${i + 1}`,
+      position: {
+        x: 0,
+        y: 0,
+        zoom: 0
+      }
     }))
     return presets
   }
