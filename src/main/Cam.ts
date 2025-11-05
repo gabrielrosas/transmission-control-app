@@ -16,8 +16,36 @@ export type CameraPTZConfig = {
   password: string
 }
 
+type PTZPresetBase = {
+  $: { token: number }
+  name: string
+  PTZPosition: {
+    PanTilt: {
+      $: {
+        x: number
+        y: number
+      }
+    }
+    zoom: {
+      $: { x: number }
+    }
+  }
+}
+
+export type PTZPosition = {
+  x: number
+  y: number
+  zoom: number
+}
+
+export type PTZPreset = {
+  id: string
+  name: string
+  position: PTZPosition
+}
+
 interface CamBase {
-  getPresets: () => Promise<{ id: string; name: string }[]>
+  getPresets: () => Promise<PTZPreset[]>
   goto: (preset: string) => Promise<void>
   isConnected: boolean
   connect: () => Promise<void>
@@ -30,7 +58,7 @@ export class Cam implements CamBase {
   private cam: OnvifCam
   private config: CameraPTZConfig
   isConnected: boolean = false
-  presets: { id: string; name: string }[] | undefined = undefined
+  presets: PTZPreset[] | undefined = undefined
 
   constructor(config: CameraPTZConfig) {
     this.config = config
@@ -53,8 +81,8 @@ export class Cam implements CamBase {
       }
 
       setInterval(() => {
-        this.cam.getStatus().then((status) => {
-          sendMessage('ptz:logs', { configId: this.config.id, logs: status })
+        this.getPosition().then((position) => {
+          sendMessage('ptz:logs', { configId: this.config.id, logs: { position } })
         })
       }, 1000)
     } catch (error) {
@@ -69,14 +97,19 @@ export class Cam implements CamBase {
       if (this.presets !== undefined) {
         return this.presets
       }
-      const presets: Record<string, { name: string }> = await this.cam.getPresets()
-
-      sendMessage('ptz:logs', { configId: this.config.id, logs: { presets } })
-
+      const presets: Record<string, PTZPresetBase> = await this.cam.getPresets()
       this.presets = Object.entries(presets).map(([id, preset]) => ({
         id,
-        name: preset.name
+        name: preset.name,
+        position: {
+          x: preset.PTZPosition.PanTilt.$.x,
+          y: preset.PTZPosition.PanTilt.$.y,
+          zoom: preset.PTZPosition.zoom.$.x
+        }
       }))
+
+      sendMessage('ptz:logs', { configId: this.config.id, logs: { presets: this.presets } })
+
       return this.presets
     } catch (error) {
       console.error(error)
@@ -84,11 +117,21 @@ export class Cam implements CamBase {
     }
   }
 
+  async getPosition() {
+    const status = await this.cam.getStatus()
+    const position: PTZPosition = {
+      x: status.position.x,
+      y: status.position.y,
+      zoom: status.position.zoom.x
+    }
+    return position
+  }
+
   async goto(preset: string) {
     try {
       await this.cam.gotoPreset({ preset })
-      const status = await this.cam.getStatus()
-      sendMessage('ptz:logs', { configId: this.config.id, logs: status })
+      const position = await this.getPosition()
+      sendMessage('ptz:logs', { configId: this.config.id, logs: { position } })
     } catch (error) {
       console.error(error)
       throw error
