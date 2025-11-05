@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { Content } from '@renderer/components/containers'
 import { ContextMenu } from '@renderer/components/ContextMenu'
 import { GroupButton } from '@renderer/components/GroupButton'
@@ -15,7 +15,8 @@ import {
   usePresetData,
   useImagePreset,
   useHidePreset,
-  useTooltipPreset
+  useTooltipPreset,
+  useSelectedPreset
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
@@ -125,12 +126,23 @@ function Preset({ preset }: { preset: PTZPreset }) {
 function PresetPreviewButton() {
   const { name, inProgress } = usePresetData()
   const { gotoPreset, isLoading } = useGotoPreset()
+  const selectedPreset = useSelectedPreset()
+
+  const variant = useMemo(() => {
+    if (selectedPreset === 'preview') {
+      return 'successOutline'
+    }
+    if (selectedPreset === 'program') {
+      return 'errorOutline'
+    }
+    return 'defaultOutline'
+  }, [selectedPreset])
   return (
     <PresetMenu>
       <GroupButton.Button
         icon={Eye}
         onClick={() => gotoPreset(false)}
-        variant={isLoading ? 'successOutline' : 'defaultOutline'}
+        variant={variant}
         disabled={inProgress}
         isLoading={isLoading}
         className="grow gap-2"

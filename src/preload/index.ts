@@ -15,6 +15,7 @@ const ptz = {
   init: (config: CameraPTZConfig) => ipcRenderer.invoke('ptz:init', config),
   getPresets: (id: string) => ipcRenderer.invoke('ptz:getPresets', id),
   goto: (values: { id: string; preset: string }) => ipcRenderer.invoke('ptz:goto', values),
+  getPosition: (id: string) => ipcRenderer.invoke('ptz:getPosition', id),
   onConnected: (callback: (id: string) => void) => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('ptz:connected', listener)

@@ -17,6 +17,13 @@ import toast from 'react-hot-toast'
 export type PTZPreset = {
   id: string
   name: string
+  position: PTZPosition
+}
+
+export type PTZPosition = {
+  x: number
+  y: number
+  zoom: number
 }
 
 export type PTZContextType = {
@@ -25,6 +32,8 @@ export type PTZContextType = {
   inProgress: boolean
   setInProgress: (inProgress: boolean) => void
   setPresetsHidden: Dispatch<SetStateAction<string[]>>
+  position: PTZPosition | undefined
+  setPosition: (position: PTZPosition) => void
 }
 
 export const PTZContext = createContext<PTZContextType>({
@@ -32,7 +41,9 @@ export const PTZContext = createContext<PTZContextType>({
   presets: [],
   inProgress: false,
   setInProgress: () => {},
-  setPresetsHidden: () => {}
+  setPresetsHidden: () => {},
+  position: undefined,
+  setPosition: () => {}
 })
 
 export type PTZPresetContextType = {
@@ -44,6 +55,7 @@ export type PTZPresetContextType = {
   inProgress: boolean
   tooltipEnabled: boolean
   setTooltipEnabled: (tooltipEnabled: boolean) => void
+  selectedPreset: undefined | 'program' | 'preview'
 }
 
 export const PTZPresetContext = createContext<PTZPresetContextType>({
@@ -54,11 +66,19 @@ export const PTZPresetContext = createContext<PTZPresetContextType>({
   image: undefined,
   inProgress: false,
   tooltipEnabled: false,
-  setTooltipEnabled: () => {}
+  setTooltipEnabled: () => {},
+  selectedPreset: undefined
 })
+
+function comparePosition(position1: PTZPosition, position2: PTZPosition) {
+  return (
+    position1.x === position2.x && position1.y === position2.y && position1.zoom === position2.zoom
+  )
+}
 
 export function useInitPTZ(config: CameraPTZConfig) {
   const [connected, setConnected] = useState<boolean>(false)
+  const [position, setPosition] = useState<PTZPosition | undefined>(undefined)
   const [presetsHidden, setPresetsHidden] = useLocalStorage<string[]>(
     `ptz-${config.id}-presets-hidden`,
     []
@@ -81,6 +101,18 @@ export function useInitPTZ(config: CameraPTZConfig) {
       unsubEvents()
     }
   }, [])
+
+  useEffect(() => {
+    if (connected && config) {
+      const timer = setInterval(() => {
+        window.ptz.getPosition(config.id).then((position) => {
+          setPosition(position)
+        })
+      }, config.transitionTime || 5000)
+      return () => clearInterval(timer)
+    }
+    return () => {}
+  }, [config, connected])
 
   const [inProgress, setInProgress] = useState<boolean>(false)
   const { data, isFetching, isRefetching, error, refetch } = useQuery({
@@ -105,9 +137,11 @@ export function useInitPTZ(config: CameraPTZConfig) {
       presets,
       inProgress,
       setInProgress,
-      setPresetsHidden
+      setPresetsHidden,
+      position,
+      setPosition
     }),
-    [config, presets, inProgress, setInProgress, setPresetsHidden]
+    [config, presets, inProgress, setInProgress, setPresetsHidden, position, setPosition]
   )
 
   return {
@@ -138,14 +172,29 @@ export function useClearHiddenPresets(config: CameraPTZConfig) {
 }
 
 export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
-  const { config, inProgress, setInProgress } = useContext(PTZContext)
+  const { config, inProgress, setInProgress, setPosition, position } = useContext(PTZContext)
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
   const programScene = useOBS((state) => state.programScene)
+  const previewScene = useOBS((state) => state.previewScene)
   const getImage = useOBS((state) => state.getImage)
   const isConnected = useOBS((state) => state.isConnected)
   const [image, setImage] = useState<string | undefined>(undefined)
   const [tooltipEnabled, setTooltipEnabled] = useState<boolean>(true)
+
+  const selectedPreset = useMemo(() => {
+    if (position) {
+      if (comparePosition(preset.position, position)) {
+        if (previewScene?.id === config!.sceneId) {
+          return 'preview'
+        }
+        if (programScene?.id === config!.sceneId) {
+          return 'program'
+        }
+      }
+    }
+    return undefined
+  }, [preset, position, previewScene, programScene, config])
 
   useEffect(() => {
     window.imageCache
@@ -167,16 +216,25 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
           }
           await changePreviewScene(config.sceneId)
         }
-        await window.ptz.goto({ id: config.id, preset: preset.id })
-        if (sendToProgram && config.sceneId) {
-          await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
-          await changeProgramScene(config.sceneId)
+        const currentPosition = await window.ptz.getPosition(config.id)
+        if (!comparePosition(currentPosition, preset.position)) {
+          const position = await window.ptz.goto({ id: config.id, preset: preset.id })
+          setPosition(position)
+          if (sendToProgram && config.sceneId) {
+            await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
+            await changeProgramScene(config.sceneId)
+          }
+        } else {
+          setPosition(currentPosition)
+          if (sendToProgram && config.sceneId) {
+            await changeProgramScene(config.sceneId)
+          }
         }
       } else {
         throw new Error('Config not found')
       }
     },
-    [config, preset, changeProgramScene, changePreviewScene, programScene]
+    [config, preset, changeProgramScene, changePreviewScene, programScene, setPosition]
   )
 
   const loadImage = useCallback(async () => {
@@ -245,8 +303,14 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
     clearImage,
     image,
     tooltipEnabled,
-    setTooltipEnabled
+    setTooltipEnabled,
+    selectedPreset
   }
+}
+
+export function useSelectedPreset() {
+  const { selectedPreset } = useContext(PTZPresetContext)
+  return selectedPreset
 }
 
 export function useGotoPreset() {

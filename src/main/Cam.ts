@@ -46,7 +46,8 @@ export type PTZPreset = {
 
 interface CamBase {
   getPresets: () => Promise<PTZPreset[]>
-  goto: (preset: string) => Promise<void>
+  getPosition: () => Promise<PTZPosition>
+  goto: (preset: string) => Promise<PTZPosition>
   isConnected: boolean
   connect: () => Promise<void>
 }
@@ -79,12 +80,6 @@ export class Cam implements CamBase {
       if (this.isConnected) {
         sendMessage('ptz:connected', this.config.id)
       }
-
-      setInterval(() => {
-        this.getPosition().then((position) => {
-          sendMessage('ptz:logs', { configId: this.config.id, logs: { position } })
-        })
-      }, 1000)
     } catch (error) {
       console.error(error)
       this.isConnected = false
@@ -132,7 +127,7 @@ export class Cam implements CamBase {
     try {
       await this.cam.gotoPreset({ preset })
       const position = await this.getPosition()
-      sendMessage('ptz:logs', { configId: this.config.id, logs: { position } })
+      return position
     } catch (error) {
       console.error(error)
       throw error
@@ -143,34 +138,40 @@ export class Cam implements CamBase {
 class CamMock implements CamBase {
   private config: CameraPTZConfig
   isConnected: boolean = true
+  presets: PTZPreset[] = []
+  currentPosition: PTZPosition = { x: 0, y: 0, zoom: 0 }
 
   constructor(config: CameraPTZConfig) {
     this.config = config
   }
   async getPresets() {
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    const presets = Array.from({ length: 30 }, (_, i) => ({
+    this.presets = Array.from({ length: 30 }, (_, i) => ({
       id: (i + 1).toString(),
       name: `Preset ${i + 1}`,
       position: {
-        x: 0,
-        y: 0,
-        zoom: 0
+        x: i,
+        y: i,
+        zoom: i
       }
     }))
-    return presets
+    this.currentPosition = this.presets[0].position
+    return this.presets
   }
   async goto(preset: string) {
-    sendMessage('ptz:logs', {
-      configId: this.config.id,
-      logs: 'Goto preset ' + preset + ' started'
-    })
     await new Promise((resolve) => setTimeout(resolve, 2000))
-    sendMessage('ptz:logs', {
-      configId: this.config.id,
-      logs: 'Goto preset ' + preset + ' done'
-    })
+    this.currentPosition = this.presets.find((p) => p.id === preset)?.position || {
+      x: 0,
+      y: 0,
+      zoom: 0
+    }
+    return this.currentPosition
   }
+
+  async getPosition() {
+    return this.currentPosition
+  }
+
   async connect() {
     if (!this.isConnected) {
       if (this.config.ip === '1.1.1.1') {
@@ -181,6 +182,10 @@ class CamMock implements CamBase {
       this.isConnected = true
     }
     if (this.isConnected) {
+      setInterval(() => {
+        this.currentPosition =
+          this.presets[Math.floor(Math.random() * this.presets.length)].position
+      }, 60000)
       sendMessage('ptz:connected', this.config.id)
     }
   }
@@ -226,5 +231,8 @@ export function loadIPCCameraPTZ(ipcMain: IpcMain) {
 
   ipcMain.handle('ptz:goto', async (_, { id, preset }: { id: string; preset: string }) => {
     return CamStore.getCam(id).goto(preset)
+  })
+  ipcMain.handle('ptz:getPosition', async (_, id: string) => {
+    return CamStore.getCam(id).getPosition()
   })
 }

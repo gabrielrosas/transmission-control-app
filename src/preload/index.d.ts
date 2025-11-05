@@ -8,13 +8,27 @@ type CameraPTZConfig = {
   port: string
   password: string
 }
+
+type PTZPosition = {
+  x: number
+  y: number
+  zoom: number
+}
+
+type PTZPreset = {
+  id: string
+  name: string
+  position: PTZPosition
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
     ptz: {
       init: (config: CameraPTZConfig) => void
-      getPresets: (id: string) => Promise<{ id: string; name: string }[]>
-      goto: ({ id, preset }: { id: string; preset: string }) => Promise<void>
+      getPresets: (id: string) => Promise<PTZPreset[]>
+      goto: ({ id, preset }: { id: string; preset: string }) => Promise<PTZPosition>
+      getPosition: (id: string) => Promise<PTZPosition>
       onConnected: (callback: (id: string) => void) => () => void
       onLogs: (callback: (event: { configId: string; logs: unknown }) => void) => () => void
     }
