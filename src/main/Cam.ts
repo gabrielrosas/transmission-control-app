@@ -47,7 +47,7 @@ export type PTZPreset = {
 interface CamBase {
   getPresets: () => Promise<PTZPreset[]>
   getPosition: () => Promise<PTZPosition>
-  goto: (preset: string) => Promise<PTZPosition>
+  goto: (preset: string) => Promise<void>
   isConnected: boolean
   connect: () => Promise<void>
 }
@@ -121,8 +121,6 @@ export class Cam implements CamBase {
   async goto(preset: string) {
     try {
       await this.cam.gotoPreset({ preset })
-      const position = await this.getPosition()
-      return position
     } catch (error) {
       console.error(error)
       throw error
@@ -155,12 +153,12 @@ class CamMock implements CamBase {
   }
   async goto(preset: string) {
     await new Promise((resolve) => setTimeout(resolve, 2000))
+    sendMessage('ptz:logs', { configId: this.config.id, logs: { goto: preset } })
     this.currentPosition = this.presets.find((p) => p.id === preset)?.position || {
       x: 0,
       y: 0,
       zoom: 0
     }
-    return this.currentPosition
   }
 
   async getPosition() {

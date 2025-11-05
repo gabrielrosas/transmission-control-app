@@ -55,7 +55,7 @@ export type PTZPresetContextType = {
   inProgress: boolean
   tooltipEnabled: boolean
   setTooltipEnabled: (tooltipEnabled: boolean) => void
-  selectedPreset: undefined | 'program' | 'preview'
+  selectedPreset: undefined | 'program' | 'preview' | 'active'
 }
 
 export const PTZPresetContext = createContext<PTZPresetContextType>({
@@ -70,7 +70,10 @@ export const PTZPresetContext = createContext<PTZPresetContextType>({
   selectedPreset: undefined
 })
 
-function comparePosition(position1: PTZPosition, position2: PTZPosition) {
+function comparePosition(position1: PTZPosition | undefined, position2: PTZPosition | undefined) {
+  if (!position1 || !position2) {
+    return false
+  }
   return (
     position1.x === position2.x && position1.y === position2.y && position1.zoom === position2.zoom
   )
@@ -173,7 +176,7 @@ export function useClearHiddenPresets(config: CameraPTZConfig) {
 }
 
 export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
-  const { config, inProgress, setInProgress, setPosition, position } = useContext(PTZContext)
+  const { config, inProgress, setInProgress, position } = useContext(PTZContext)
   const changeProgramScene = useOBS((state) => state.changeProgramScene)
   const changePreviewScene = useOBS((state) => state.changePreviewScene)
   const programScene = useOBS((state) => state.programScene)
@@ -196,6 +199,7 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
         if (programScene?.id === config.sceneId) {
           return 'program'
         }
+        return 'active'
       }
     }
     return undefined
@@ -222,17 +226,20 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
           await changePreviewScene(config.sceneId)
         }
         const currentPosition = await window.ptz.getPosition(config.id)
-        if (presetPosition && !comparePosition(currentPosition, presetPosition)) {
-          const position = await window.ptz.goto({ id: config.id, preset: preset.id })
-          setPosition(position)
+        if (!comparePosition(currentPosition, presetPosition)) {
+          await window.ptz.goto({ id: config.id, preset: preset.id })
           if (sendToProgram && config.sceneId) {
             await new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500))
+            const currentPosition = await window.ptz.getPosition(config.id)
             setPresetPosition(currentPosition)
             await changeProgramScene(config.sceneId)
           } else {
-            new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500)).then(() => {
-              setPresetPosition(currentPosition)
-            })
+            new Promise((resolve) => setTimeout(resolve, config.transitionTime || 500)).then(
+              async () => {
+                const currentPosition = await window.ptz.getPosition(config.id)
+                setPresetPosition(currentPosition)
+              }
+            )
           }
         } else {
           if (sendToProgram && config.sceneId) {
@@ -249,7 +256,6 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
       changeProgramScene,
       changePreviewScene,
       programScene,
-      setPosition,
       setPresetPosition,
       presetPosition
     ]
@@ -341,6 +347,19 @@ export function useGotoPreset() {
   return { gotoPreset, isLoading: isGotoPending }
 }
 
+export function useCachePreset() {
+  const { config } = useContext(PTZContext)
+  const { preset } = useContext(PTZPresetContext)
+  const [presetPosition, setPresetPosition] = useLocalStorage<PTZPosition | undefined>(
+    `ptz-${config!.id}-presets-position-${preset!.id}`,
+    undefined
+  )
+  return {
+    cache: { position: presetPosition },
+    clearCache: () => setPresetPosition(undefined)
+  }
+}
+
 export function useImagePreset() {
   const { loadImage, image, clearImage } = useContext(PTZPresetContext)
   return {
@@ -386,4 +405,17 @@ export function useClearImages(propsConfig?: CameraPTZConfig) {
     },
     [propsConfig]
   )
+}
+
+export function useClearCaches(config: CameraPTZConfig) {
+  return useCallback(async () => {
+    const keys = Object.keys(window.localStorage)
+    console.log(keys)
+    keys.forEach((key) => {
+      if (key.startsWith(`ptz-${config.id}-presets-position-`)) {
+        console.log('removing key', key)
+        window.localStorage.removeItem(key)
+      }
+    })
+  }, [config])
 }

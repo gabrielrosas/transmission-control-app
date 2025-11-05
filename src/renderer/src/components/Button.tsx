@@ -13,6 +13,7 @@ const buttonVariants = cva(
         defaultOutline:
           'bg-secondary text-secondary-foreground border border-border hover:bg-secondary-foreground/20',
         primary: 'bg-primary text-primary-foreground  border border-primary hover:bg-primary-hover',
+        primaryOutline: 'bg-secondary text-primary border border-primary hover:bg-primary/20',
         success: 'bg-success text-white border border-success hover:bg-success-hover',
         successOutline: 'bg-secondary text-success border border-success hover:bg-success/20',
         error:

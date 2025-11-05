@@ -16,7 +16,8 @@ import {
   useImagePreset,
   useHidePreset,
   useTooltipPreset,
-  useSelectedPreset
+  useSelectedPreset,
+  useCachePreset
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
@@ -135,6 +136,9 @@ function PresetPreviewButton() {
     if (selectedPreset === 'program') {
       return 'errorOutline'
     }
+    if (selectedPreset === 'active') {
+      return 'primaryOutline'
+    }
     return 'defaultOutline'
   }, [selectedPreset])
   return (
@@ -171,6 +175,7 @@ function PresetProgramButton() {
 
 function PresetMenu({ children }: { children: React.ReactNode }) {
   const { loadImage, clearImage, image } = useImagePreset()
+  const { cache, clearCache } = useCachePreset()
   const hidePreset = useHidePreset()
   const { setTooltipEnabled } = useTooltipPreset()
   return (
@@ -186,6 +191,14 @@ function PresetMenu({ children }: { children: React.ReactNode }) {
           </ContextMenu.Item>
           <ContextMenu.Item icon={ImageOff} onClick={clearImage}>
             Apagar imagem
+          </ContextMenu.Item>
+        </>
+      )}
+      {cache.position && (
+        <>
+          <ContextMenu.Separator />
+          <ContextMenu.Item icon={RefreshCcw} onClick={clearCache}>
+            Limpar cache
           </ContextMenu.Item>
         </>
       )}

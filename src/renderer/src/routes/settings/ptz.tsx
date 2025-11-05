@@ -2,7 +2,17 @@ import { Button } from '@renderer/components/Button'
 import { Content } from '@renderer/components/containers'
 import { TextField, FormControl, BtnCheckbox } from '@renderer/components/form'
 import { Title } from '@renderer/components/titles'
-import { WebcamIcon, Plus, Trash, Save, EllipsisVertical, Edit, ImageOff, Eye } from 'lucide-react'
+import {
+  WebcamIcon,
+  Plus,
+  Trash,
+  Save,
+  EllipsisVertical,
+  Edit,
+  ImageOff,
+  Eye,
+  RefreshCcw
+} from 'lucide-react'
 import { useConfig } from '@renderer/hooks/config'
 import { CameraPTZConfig, CameraPTZConfigSchema } from '@renderer/schemas/CameraPTZ'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -14,7 +24,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Select, type Option } from '@renderer/components/form/Select'
 import { useOBS } from '@renderer/hooks/obs'
 
-import { useClearHiddenPresets, useClearImages } from '@renderer/hooks/ptz'
+import { useClearCaches, useClearHiddenPresets, useClearImages } from '@renderer/hooks/ptz'
 import { useConfirm } from '@renderer/hooks/utils/confirm'
 import { Dialog } from '@renderer/components/Dialog'
 import { GroupButton } from '@renderer/components/GroupButton'
@@ -145,6 +155,7 @@ function CameraItem({
   deleteCamera: (camera: CameraPTZConfig) => Promise<void>
 }) {
   const clearImages = useClearImages(camera)
+  const clearCaches = useClearCaches(camera)
   const { hiddenPresets, clearHiddenPresets } = useClearHiddenPresets(camera)
 
   const { component: confirmDelete, open: openConfirmDelete } = useConfirm({
@@ -191,6 +202,10 @@ function CameraItem({
           </DropdownMenu.Item>
           <DropdownMenu.Item icon={ImageOff} onClick={openConfirmClearImages}>
             Limpar imagens da câmera
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item icon={RefreshCcw} onClick={clearCaches}>
+            Limpar caches da câmera
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Label>{hiddenPresets.length} Presets ocultos</DropdownMenu.Label>

@@ -27,7 +27,7 @@ declare global {
     ptz: {
       init: (config: CameraPTZConfig) => void
       getPresets: (id: string) => Promise<PTZPreset[]>
-      goto: ({ id, preset }: { id: string; preset: string }) => Promise<PTZPosition>
+      goto: ({ id, preset }: { id: string; preset: string }) => Promise<void>
       getPosition: (id: string) => Promise<PTZPosition>
       onConnected: (callback: (id: string) => void) => () => void
       onLogs: (callback: (event: { configId: string; logs: unknown }) => void) => () => void
