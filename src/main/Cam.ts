@@ -20,7 +20,7 @@ type PTZPresetBase = {
   $: { token: number }
   name: string
   PTZPosition: {
-    PanTilt: {
+    panTilt: {
       $: {
         x: number
         y: number
@@ -102,8 +102,8 @@ export class Cam implements CamBase {
         id,
         name: preset.name,
         position: {
-          x: preset.PTZPosition.PanTilt.$.x,
-          y: preset.PTZPosition.PanTilt.$.y,
+          x: preset.PTZPosition.panTilt.$.x,
+          y: preset.PTZPosition.panTilt.$.y,
           zoom: preset.PTZPosition.zoom.$.x
         }
       }))
@@ -122,7 +122,7 @@ export class Cam implements CamBase {
     const position: PTZPosition = {
       x: status.position.x,
       y: status.position.y,
-      zoom: status.position.zoom.x
+      zoom: status.position.zoom
     }
     return position
   }
