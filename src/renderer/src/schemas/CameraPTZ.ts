@@ -33,7 +33,8 @@ export const CameraPTZConfigSchema = z.object({
     .number()
     .max(100, 'Limite de presets deve ser menor que 100')
     .nullable()
-    .optional()
+    .optional(),
+  positionRefreshTime: z.boolean().nullable().optional()
 })
 
 export type CameraPTZConfig = z.infer<typeof CameraPTZConfigSchema>

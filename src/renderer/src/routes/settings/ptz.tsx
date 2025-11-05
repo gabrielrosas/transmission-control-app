@@ -1,6 +1,6 @@
 import { Button } from '@renderer/components/Button'
 import { Content } from '@renderer/components/containers'
-import { TextField, FormControl } from '@renderer/components/form'
+import { TextField, FormControl, BtnCheckbox } from '@renderer/components/form'
 import { Title } from '@renderer/components/titles'
 import { WebcamIcon, Plus, Trash, Save, EllipsisVertical, Edit, ImageOff, Eye } from 'lucide-react'
 import { useConfig } from '@renderer/hooks/config'
@@ -354,6 +354,7 @@ function FormCamera({
             max={10000}
           />
         </FormControl>
+        <BtnCheckbox {...register('positionRefreshTime')} label="Atualizar posição da câmera" />
         <div className="h-px w-full bg-border my-4" />
         <Button
           icon={Save}

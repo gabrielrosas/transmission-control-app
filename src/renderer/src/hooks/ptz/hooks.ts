@@ -103,9 +103,10 @@ export function useInitPTZ(config: CameraPTZConfig) {
   }, [])
 
   useEffect(() => {
-    if (connected && config) {
+    if (connected && config && config.positionRefreshTime) {
       const timer = setInterval(() => {
         window.ptz.getPosition(config.id).then((position) => {
+          console.log('position refresh', position)
           setPosition(position)
         })
       }, config.transitionTime || 5000)
@@ -183,12 +184,12 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
   const [tooltipEnabled, setTooltipEnabled] = useState<boolean>(true)
 
   const selectedPreset = useMemo(() => {
-    if (position) {
+    if (position && config && config.positionRefreshTime) {
       if (comparePosition(preset.position, position)) {
-        if (previewScene?.id === config!.sceneId) {
+        if (previewScene?.id === config.sceneId) {
           return 'preview'
         }
-        if (programScene?.id === config!.sceneId) {
+        if (programScene?.id === config.sceneId) {
           return 'program'
         }
       }
