@@ -218,6 +218,7 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
           await changePreviewScene(config.sceneId)
         }
         const currentPosition = await window.ptz.getPosition(config.id)
+        console.log({ currentPosition, presetPosition: preset.position })
         if (!comparePosition(currentPosition, preset.position)) {
           const position = await window.ptz.goto({ id: config.id, preset: preset.id })
           setPosition(position)

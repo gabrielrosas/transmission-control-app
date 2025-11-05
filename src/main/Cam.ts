@@ -89,10 +89,12 @@ export class Cam implements CamBase {
 
   async getPresets() {
     try {
-      if (this.presets !== undefined) {
-        sendMessage('ptz:logs', { configId: this.config.id, logs: { presets: this.presets } })
-        return this.presets
-      }
+      const configs = await this.cam.getConfigs()
+      sendMessage('ptz:logs', { configId: this.config.id, logs: { configs } })
+    } catch (error) {
+      console.error(error)
+    }
+    try {
       const presets: Record<string, PTZPresetBase> = await this.cam.getPresets()
       this.presets = Object.entries(presets).map(([id, preset]) => ({
         id,
@@ -103,7 +105,6 @@ export class Cam implements CamBase {
           zoom: preset.PTZPosition.zoom.$.x
         }
       }))
-
       sendMessage('ptz:logs', { configId: this.config.id, logs: { presets: this.presets } })
 
       return this.presets
