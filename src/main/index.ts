@@ -62,6 +62,17 @@ function createWindow() {
       {
         label: 'Visualizar',
         submenu: [{ role: 'toggleDevTools', accelerator: 'CommandOrControl+Shift+I' }]
+      },
+      {
+        label: 'Editar',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' }
+        ]
       }
     ])
     Menu.setApplicationMenu(menu)

@@ -63,17 +63,19 @@ export function ObsCard() {
         </Subtitle>
       </Content.Header>
       {!isLoading && isConnected && (
-        <Content.Content className="grid grid-cols-2 gap-2 p-2">
-          {scenesToShow
-            .sort((a, b) => (b.order || 0) - (a.order || 0))
-            .map((scene) => (
-              <SceneButtons
-                key={scene.id}
-                scene={scene}
-                isProgramScene={programScene?.id === scene.id}
-                isPreviewScene={previewScene?.id === scene.id}
-              />
-            ))}
+        <Content.Content className="p-0">
+          <div className="grid grid-cols-2 gap-2 p-2">
+            {scenesToShow
+              .sort((a, b) => (b.order || 0) - (a.order || 0))
+              .map((scene) => (
+                <SceneButtons
+                  key={scene.id}
+                  scene={scene}
+                  isProgramScene={programScene?.id === scene.id}
+                  isPreviewScene={previewScene?.id === scene.id}
+                />
+              ))}
+          </div>
         </Content.Content>
       )}
     </Content.Container>
