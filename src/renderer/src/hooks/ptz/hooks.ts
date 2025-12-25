@@ -220,10 +220,15 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
     async (sendToProgram: boolean) => {
       if (config) {
         if (config.sceneId) {
+          console.log('programScene', programScene)
           if (programScene?.id === config.sceneId && config.axSceneId) {
             await changeProgramScene(config.axSceneId)
           }
-          await changePreviewScene(config.sceneId)
+          try {
+            await changePreviewScene(config.sceneId)
+          } catch (error) {
+            console.error(error)
+          }
         }
         const currentPosition = await window.ptz.getPosition(config.id)
         if (!comparePosition(currentPosition, presetPosition)) {
@@ -258,6 +263,7 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
       preset,
       changeProgramScene,
       changePreviewScene,
+      previewScene,
       programScene,
       setPresetPosition,
       presetPosition,
@@ -310,9 +316,14 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
     async (onlyPreview: boolean) => {
       await toast.promise(
         async () => {
-          setInProgress(true)
-          await gotoPresetBase(onlyPreview)
-          setInProgress(false)
+          try {
+            setInProgress(true)
+            await gotoPresetBase(onlyPreview)
+            setInProgress(false)
+          } catch (error) {
+            console.error(error)
+            throw error
+          }
         },
         {
           loading: `Indo para ${preset.name}...`,
