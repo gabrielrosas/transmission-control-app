@@ -3,6 +3,7 @@ import { Box } from '../../components/Box'
 import { ObsCard } from './obs'
 import { PtzCard } from './ptz'
 import { useState } from 'react'
+import { PTZManagerProvider } from '@renderer/hooks/ptz/Manager'
 // import { OverlayersCard } from './overlayers'
 
 export function HomePage() {
@@ -10,7 +11,7 @@ export function HomePage() {
   const [selected, setSelected] = useState<string | null>(Object.keys(cameraPTZConfig)[0] || null)
   return (
     <Box direction="column" gap="small" className="h-full" align="start">
-      <div className="flex flex-col gap-2 grow min-h-0 w-full">
+      <PTZManagerProvider>
         {Object.values(cameraPTZConfig).map((camera) => (
           <PtzCard
             key={camera.id}
@@ -23,7 +24,7 @@ export function HomePage() {
           selected={selected === 'overlayers'}
           changeColapsed={() => setSelected(selected === 'overlayers' ? null : 'overlayers')}
         /> */}
-      </div>
+      </PTZManagerProvider>
       <ObsCard />
     </Box>
   )

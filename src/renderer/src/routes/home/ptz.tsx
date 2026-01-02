@@ -17,11 +17,22 @@ import {
   useHidePreset,
   useTooltipPreset,
   useSelectedPreset,
-  useCachePreset
+  useCachePreset,
+  usePTZAliasManager
 } from '@renderer/hooks/ptz'
 import { cn } from '@renderer/libs/cn'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
-import { Loader2, Webcam, Eye, Play, RefreshCcw, Image, EyeOff, ImageOff } from 'lucide-react'
+import {
+  Loader2,
+  Webcam,
+  Eye,
+  Play,
+  RefreshCcw,
+  Image,
+  EyeOff,
+  ImageOff,
+  Pencil
+} from 'lucide-react'
 
 type PtzCardProps = {
   camera: CameraPTZConfig
@@ -175,11 +186,15 @@ function PresetProgramButton() {
 
 function PresetMenu({ children }: { children: React.ReactNode }) {
   const { loadImage, clearImage, image } = useImagePreset()
+  const { showModalAlias } = usePTZAliasManager()
   const { cache, clearCache } = useCachePreset()
   const hidePreset = useHidePreset()
   const { setTooltipEnabled } = useTooltipPreset()
   return (
     <ContextMenu.Container trigger={children} onOpenChange={(open) => setTooltipEnabled(!open)}>
+      <ContextMenu.Item icon={Pencil} onClick={showModalAlias}>
+        Editar nome
+      </ContextMenu.Item>
       {!image ? (
         <ContextMenu.Item icon={Image} onClick={loadImage}>
           Carregar imagem

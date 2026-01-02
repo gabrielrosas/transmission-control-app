@@ -26,6 +26,29 @@ export type PTZPosition = {
   zoom: number
 }
 
+export type PTZManager = {
+  showModalAlias: (config: CameraPTZConfig, preset: PTZPreset) => void
+  alias: Record<string, string>
+}
+
+export const PTZManagerContext = createContext<PTZManager>({
+  showModalAlias: () => {},
+  alias: {}
+})
+
+export function usePTZAliasManager() {
+  const { showModalAlias, alias } = useContext(PTZManagerContext)
+  const { config } = useContext(PTZContext)
+  const { preset } = useContext(PTZPresetContext)
+
+  return {
+    showModalAlias: () => {
+      showModalAlias(config!, preset!)
+    },
+    presetName: alias[`${config!.id}-${preset!.id}`] || preset!.name
+  }
+}
+
 export type PTZContextType = {
   config: CameraPTZConfig | null
   presets: PTZPreset[]
@@ -263,7 +286,6 @@ export function useInitPTZPreset(preset: PTZPreset): PTZPresetContextType {
       preset,
       changeProgramScene,
       changePreviewScene,
-      previewScene,
       programScene,
       setPresetPosition,
       presetPosition,
@@ -394,9 +416,10 @@ export function useHidePreset() {
 
 export function usePresetData() {
   const { preset, image, inProgress } = useContext(PTZPresetContext)
+  const { presetName } = usePTZAliasManager()
   return {
     id: preset!.id,
-    name: preset!.name,
+    name: presetName,
     image,
     inProgress
   }
