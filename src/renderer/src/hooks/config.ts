@@ -1,5 +1,13 @@
 import { type OBSConfig } from '../schemas/OBSConfig'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+  writeBatch
+} from 'firebase/firestore'
 import { useEffect } from 'react'
 import { db, useAuth } from './firebase'
 import { create } from 'zustand'
@@ -14,13 +22,22 @@ const initialConfig: Config = {
   cameraPTZConfig: {}
 }
 
+type SetConfigOptions = {
+  restoredFromId?: string
+  restoredFromCreatedAt?: Timestamp | null
+}
+
 type ConfigContextType = {
   config: Config
   userID: string | null
   load: boolean
-  setConfig: (config: Partial<Config>) => Promise<void>
+  setConfig: (config: Partial<Config>, opts?: SetConfigOptions) => Promise<void>
   setContextConfig: (config: Config) => void
   setUserID: (userID: string) => void
+}
+
+async function seedConfig(userID: string, config: Config) {
+  await setDoc(doc(db, 'configs', userID), config)
 }
 
 export const useConfig = create<ConfigContextType>((set, get) => ({
@@ -28,21 +45,32 @@ export const useConfig = create<ConfigContextType>((set, get) => ({
   userID: null,
   load: false,
   setContextConfig: (config) => set({ config, load: true }),
-  setConfig: async (newConfig) => {
+  setConfig: async (newConfig, opts) => {
     const userID = get().userID
     const config = get().config
     if (!userID) return
-    await setDoc(doc(db, 'configs', userID), {
-      ...config,
-      ...newConfig
-    } as Config)
+    const merged: Config = { ...config, ...newConfig }
+    const batch = writeBatch(db)
+    batch.set(doc(db, 'configs', userID), merged)
+    const historyRef = doc(collection(db, 'configs_history', userID, 'versions'))
+    const historyData: Record<string, unknown> = {
+      createdAt: serverTimestamp(),
+      config: merged
+    }
+    if (opts?.restoredFromId) {
+      historyData.restoredFromId = opts.restoredFromId
+      if (opts.restoredFromCreatedAt) {
+        historyData.restoredFromCreatedAt = opts.restoredFromCreatedAt
+      }
+    }
+    batch.set(historyRef, historyData)
+    await batch.commit()
   },
   setUserID: (userID) => set({ userID })
 }))
 
 export function useConfigInit() {
   const user = useAuth((state) => state.user)
-  const setConfig = useConfig((state) => state.setConfig)
   const setContextConfig = useConfig((state) => state.setContextConfig)
   const setUserID = useConfig((state) => state.setUserID)
   const load = useConfig((state) => state.load)
@@ -57,15 +85,15 @@ export function useConfigInit() {
         if (config) {
           setContextConfig(config)
         } else {
-          setConfig(initialConfig)
+          seedConfig(user.uid, initialConfig)
         }
       },
       () => {
-        setConfig(initialConfig)
+        seedConfig(user.uid, initialConfig)
       }
     )
     return () => unsub()
-  }, [user, setConfig, setContextConfig, setUserID])
+  }, [user, setContextConfig, setUserID])
 
   return load
 }

@@ -1,7 +1,7 @@
 import { Link, Outlet } from 'react-router-dom'
 import { Button } from '../../components/Button'
 import { OBSIcon } from '../../components/icons/obs'
-import { HouseIcon, WebcamIcon, LogOut } from 'lucide-react'
+import { HouseIcon, WebcamIcon, LogOut, History } from 'lucide-react'
 import { Separator } from '../../components/navbar/Separator'
 import { Page } from '../../components/containers'
 import { useAuth } from '../../hooks/firebase'
@@ -34,6 +34,9 @@ export function SettingsLayout() {
         </Button>
         <Button asChild icon={WebcamIcon} variant="nav">
           <Link to="/settings/ptz">PTZ</Link>
+        </Button>
+        <Button asChild icon={History} variant="nav">
+          <Link to="/settings/history">Histórico</Link>
         </Button>
         <div className="flex-1" />
         <Separator />

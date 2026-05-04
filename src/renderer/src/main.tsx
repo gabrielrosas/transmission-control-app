@@ -11,6 +11,7 @@ import { HomePage } from './routes/home'
 import { SettingsLayout } from './routes/settings/layout'
 import { ObsPage } from './routes/settings/obs'
 import { PtzPage } from './routes/settings/ptz'
+import { HistoryPage } from './routes/settings/history'
 import { Providers } from './providers'
 
 const router = createHashRouter([
@@ -24,7 +25,8 @@ const router = createHashRouter([
     element: <SettingsLayout />, // layout principal de Settings
     children: [
       { path: 'obs', element: <ObsPage /> },
-      { path: 'ptz', element: <PtzPage /> }
+      { path: 'ptz', element: <PtzPage /> },
+      { path: 'history', element: <HistoryPage /> }
     ]
   }
 ])
