@@ -120,6 +120,24 @@ export function useImportConfig() {
   })
 }
 
+export function useCreateVersionNow() {
+  const setConfig = useConfig((state) => state.setConfig)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      await toast.promise(setConfig({}), {
+        loading: 'Criando versão...',
+        success: 'Versão criada com sucesso!',
+        error: 'Erro ao criar versão'
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configHistory'] })
+    }
+  })
+}
+
 export function useConfigVersionNames(): Record<string, string> {
   const userID = useConfig((state) => state.userID)
   const [names, setNames] = useState<Record<string, string>>({})

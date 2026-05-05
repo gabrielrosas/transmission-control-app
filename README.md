@@ -18,7 +18,8 @@ Built with Electron, React 19, TypeScript and Tailwind. UI language is Portugues
 - **Per-user config sync via Firebase** — sign in with email/password; camera and OBS configurations sync to Firestore and follow you across machines.
 - **Config history with one-click restore** — every config save writes an immutable version to Firestore. The history screen lets you preview the diff between any past version and the current state, then restore — which itself is recorded as a new entry, so the timeline only ever moves forward.
 - **Export / import config as JSON** — every history entry can be downloaded as a versioned JSON file (offline backup). Importing a file shows a diff preview and creates a new history entry on confirm.
-- **Name your versions** — give any history entry a human label ("Pre-show 2026-05-04"). Names live in a separate mutable Firestore collection so the underlying snapshot stays tamper-proof.
+- **Name your versions** — give any history entry a human label ("Pre-show 2026-05-04"). Names live in a separate mutable Firestore collection so the underlying snapshot stays tamper-proof. Named versions also surface in their own list at the top of the history screen for quick access, in addition to appearing in the chronological list.
+- **Manual checkpoint button** — "Criar versão agora" creates a new history entry identical to the current state, useful for bookmarking a moment before tweaking things.
 - **Mock PTZ mode** for development without real hardware (`PTZ_CAM_DEV=true`).
 
 ## Tech stack

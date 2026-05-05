@@ -1,7 +1,10 @@
-import { ChangeEvent, useRef, useState } from 'react'
+import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import {
+  Bookmark,
+  BookmarkPlus,
   Check,
   ChevronDown,
+  Clock,
   Download,
   History,
   Loader2,
@@ -16,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import z from 'zod'
 import toast from 'react-hot-toast'
 import { Content } from '@renderer/components/containers'
-import { Title } from '@renderer/components/titles'
+import { Subtitle, Title } from '@renderer/components/titles'
 import { Button } from '@renderer/components/Button'
 import { GroupButton } from '@renderer/components/GroupButton'
 import { Dialog } from '@renderer/components/Dialog'
@@ -27,6 +30,7 @@ import { useConfig } from '@renderer/hooks/config'
 import {
   useConfigHistory,
   useConfigVersionNames,
+  useCreateVersionNow,
   useImportConfig,
   useRestoreVersion,
   useSetVersionName
@@ -68,10 +72,13 @@ function filenameTimestamp(ts: Timestamp | null): string {
 export function HistoryPage() {
   const { versions, isLoading, hasMore, isFetchingMore, loadMore } = useConfigHistory()
   const names = useConfigVersionNames()
+  const { mutate: createVersionNow, isPending: isCreatingVersion } = useCreateVersionNow()
   const [selected, setSelected] = useState<ConfigHistoryVersion | null>(null)
   const [importTarget, setImportTarget] = useState<ConfigSnapshot | null>(null)
   const [renameTarget, setRenameTarget] = useState<ConfigHistoryVersion | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const namedVersions = useMemo(() => versions.filter((v) => names[v.id]), [versions, names])
 
   const handleFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -107,6 +114,15 @@ export function HistoryPage() {
           className="hidden"
         />
         <Button
+          icon={BookmarkPlus}
+          variant="primary"
+          onClick={() => createVersionNow()}
+          isLoading={isCreatingVersion}
+          full
+        >
+          Criar versão agora
+        </Button>
+        <Button
           icon={Upload}
           variant="defaultOutline"
           onClick={() => fileInputRef.current?.click()}
@@ -127,17 +143,50 @@ export function HistoryPage() {
           </p>
         )}
 
-        {versions.map((version, index) => (
-          <VersionRow
-            key={version.id}
-            version={version}
-            name={names[version.id]}
-            isCurrent={index === 0}
-            onRestore={() => setSelected(version)}
-            onDownload={() => handleDownload(version)}
-            onRename={() => setRenameTarget(version)}
-          />
-        ))}
+        {namedVersions.length > 0 && (
+          <>
+            <Subtitle icon={Bookmark} className="mt-2">
+              Marcadores
+            </Subtitle>
+            {namedVersions.map((version) => {
+              const isCurrent = versions[0]?.id === version.id
+              return (
+                <VersionRow
+                  key={`named-${version.id}`}
+                  version={version}
+                  primary={names[version.id]}
+                  secondary={formatTimestamp(version.createdAt)}
+                  isCurrent={isCurrent}
+                  onRestore={() => setSelected(version)}
+                  onDownload={() => handleDownload(version)}
+                  onRename={() => setRenameTarget(version)}
+                />
+              )
+            })}
+            <div className="h-px w-full bg-border my-2" />
+          </>
+        )}
+
+        {versions.length > 0 && (
+          <Subtitle icon={Clock} className="mt-2">
+            Todas as versões
+          </Subtitle>
+        )}
+        {versions.map((version) => {
+          const isCurrent = versions[0]?.id === version.id
+          return (
+            <VersionRow
+              key={version.id}
+              version={version}
+              primary={formatTimestamp(version.createdAt)}
+              secondary={names[version.id]}
+              isCurrent={isCurrent}
+              onRestore={() => setSelected(version)}
+              onDownload={() => handleDownload(version)}
+              onRename={() => setRenameTarget(version)}
+            />
+          )
+        })}
 
         {hasMore && (
           <Button
@@ -165,32 +214,37 @@ export function HistoryPage() {
 
 function VersionRow({
   version,
-  name,
+  primary,
+  secondary,
   isCurrent,
   onRestore,
   onDownload,
   onRename
 }: {
   version: ConfigHistoryVersion
-  name: string | undefined
+  primary: string
+  secondary?: string
   isCurrent: boolean
   onRestore: () => void
   onDownload: () => void
   onRename: () => void
 }) {
-  const content = (
+  const labelArea = (
     <div className="flex flex-col items-start leading-tight grow min-w-0">
-      <div className="flex flex-row items-center gap-2 w-full">
-        <span className="truncate">{name ? name : formatTimestamp(version.createdAt)}</span>
-        <div className="grow" />
-        {isCurrent && <Tag label="Atual" icon={Check} variant="success" />}
-      </div>
-      {name && <span className="text-[10px] opacity-60">{formatTimestamp(version.createdAt)}</span>}
+      <span className="truncate w-full">{primary}</span>
+      {secondary && <span className="text-[10px] opacity-60 truncate w-full">{secondary}</span>}
       {version.restoredFromCreatedAt && (
         <span className="text-[10px] opacity-60">
           Origem: {formatShortTimestamp(version.restoredFromCreatedAt)}
         </span>
       )}
+    </div>
+  )
+
+  const content = (
+    <div className="flex flex-row items-center gap-2 w-full">
+      {labelArea}
+      {isCurrent && <Tag label="Atual" icon={Check} variant="success" />}
     </div>
   )
 

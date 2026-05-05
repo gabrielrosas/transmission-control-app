@@ -139,7 +139,12 @@ Trade-off: the snapshot stays tamper-proof (the audit-trail use case), but the h
 - `useConfigVersionNames()` — onSnapshot listener, returns `Record<versionId, name>`.
 - `useSetVersionName()` — mutation with `{ versionId, name }` — `name=null` deletes the entry via `deleteField()`.
 
-UI: when a name is set, it replaces the timestamp on the row's primary line; the timestamp moves to a small subtitle below.
+UI: when a name is set, it replaces the timestamp on the row's primary line; the timestamp moves to a small subtitle below. The history page renders two sections — first a "Versões nomeadas" section showing only the entries that have a name (sourced from the `names` doc), then "Todas as versões" showing the full chronological list. A named version appears in BOTH sections; an unnamed version appears only in the chronological list. Each row in either section gets the same actions (rename, download, restore) and the "Atual" tag is rendered on whichever rows correspond to the latest version.
+
+Caveat with pagination: the named-versions section is built from the in-memory `versions` array (i.e. the loaded pages). If a user has named a version that lives outside the loaded pages, it won't appear in the named-versions section until they hit "Carregar mais" enough times to load that page. For the typical scale (small number of named entries, recent ones at the top) this is fine; if it becomes a problem, fetch named versions individually by id from `configs_history_names`.
+
+### Manual snapshot (Criar versão agora)
+[`useCreateVersionNow`](src/renderer/src/hooks/configHistory.ts) is a no-op `setConfig({})` wrapped in `toast.promise` — writes the current config back to `configs/<uid>` and creates a new history entry that's identical to the previous one. Used as a marker / checkpoint when the user wants to bookmark the current state without making an actual config change. The button sits at the top of the history page.
 
 ### Schemas
 All persisted shapes are Zod-validated:
