@@ -16,10 +16,14 @@ import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
 interface Config {
   obsConfig: OBSConfig | null
   cameraPTZConfig: Record<string, CameraPTZConfig>
+  presetsAlias: Record<string, string>
+  presetsHidden: Record<string, string[]>
 }
 const initialConfig: Config = {
   obsConfig: null,
-  cameraPTZConfig: {}
+  cameraPTZConfig: {},
+  presetsAlias: {},
+  presetsHidden: {}
 }
 
 type SetConfigOptions = {
@@ -81,9 +85,9 @@ export function useConfigInit() {
     const unsub = onSnapshot(
       doc(db, 'configs', user.uid),
       (doc) => {
-        const config = doc.data() as Config | undefined
+        const config = doc.data() as Partial<Config> | undefined
         if (config) {
-          setContextConfig(config)
+          setContextConfig({ ...initialConfig, ...config })
         } else {
           seedConfig(user.uid, initialConfig)
         }

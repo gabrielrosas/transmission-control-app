@@ -76,7 +76,13 @@ The interesting logic lives in [`useInitPTZPreset`](src/renderer/src/hooks/ptz/h
 `axSceneId` exists specifically to mask camera transitions. Don't refactor it away.
 
 ### Config persistence
-Config is synced per `auth.uid` via Firestore `onSnapshot` ([src/renderer/src/hooks/config.ts](src/renderer/src/hooks/config.ts:50)). Local-only state (hidden presets, cached preset positions, preset aliases) lives in `localStorage` via `usehooks-ts`. Keys follow the pattern `ptz-<configId>-presets-hidden`, `ptz-<configId>-presets-position-<presetId>`, `presets-alias`.
+Config is synced per `auth.uid` via Firestore `onSnapshot` ([src/renderer/src/hooks/config.ts](src/renderer/src/hooks/config.ts:50)). The `Config` shape is `{ obsConfig, cameraPTZConfig, presetsAlias, presetsHidden }`:
+- `presetsAlias: Record<string, string>` — flat map keyed by `${cameraId}-${presetId}` → display name (renames in the PTZ panel).
+- `presetsHidden: Record<string, string[]>` — per-camera array of preset IDs hidden from the panel.
+
+Both go through `setConfig` like any other config field, so each rename/hide creates a new history version (intentional — the user accepted the trade-off).
+
+Cached preset *positions* (used to detect "this preset is currently active") remain in `localStorage` keyed by `ptz-<configId>-presets-position-<presetId>` — that's runtime cache, per-device, not synced.
 
 `useConfig` exposes two write paths and one helper:
 - **`setConfig(partial, opts?)`** — public action, called from settings forms. Atomically writes `configs/<uid>` *and* a new entry in `configs_history/<uid>/versions/<auto>` via `writeBatch`. The optional `{ restoredFromId, restoredFromCreatedAt }` opts mark a write as coming from a restore so the new history entry is traceable.
@@ -182,7 +188,7 @@ Firebase config is loaded from `.env.development.local` (Vite `VITE_FIREBASE_*` 
 ## When making changes
 
 - **Touching IPC?** Update main handler + preload bridge + `index.d.ts` in the same change.
-- **Touching config shape?** Update the Zod schema + the settings form + `initialConfig` defaults + any `addCamera`-like default constructors + the field labels in [components/ConfigDiff.tsx](src/renderer/src/components/ConfigDiff.tsx) so the new field shows up in the restore preview. Existing user docs in Firestore won't have new fields — make them optional or write a migration.
+- **Touching config shape?** Update the Zod schema + the settings form + `initialConfig` defaults + any `addCamera`-like default constructors + [components/ConfigDiff.tsx](src/renderer/src/components/ConfigDiff.tsx) so the new field shows up in the restore preview (either add to the relevant `*_FIELD_LABELS` map for flat scalar fields, or add a dedicated section like the existing `presetsAlias` / `presetsHidden` blocks for nested data). Existing user docs in Firestore won't have new fields — make them optional or write a migration.
 - **Adding a new write path for config?** Use `useConfig.setConfig` (or wrap it). Do **not** call `setDoc(doc(db, 'configs', uid), ...)` directly — that bypasses the history write. The only legitimate exception is `seedConfig` for the no-doc-yet case, which already exists.
 - **Touching OBS event handling?** Test reconnect (kill OBS, restart it) — `OBSConnectionStore` is a singleton and reconnect logic goes through `init(config, setState, true)`.
 - **Touching PTZ goto flow?** Re-read [`gotoPresetBase`](src/renderer/src/hooks/ptz/hooks.ts) end-to-end before editing. The interplay between `axSceneId`, `transitionTime`, position polling and OBS scene swap is subtle.

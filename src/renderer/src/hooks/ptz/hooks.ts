@@ -11,6 +11,7 @@ import {
   useState
 } from 'react'
 import { useOBS } from '../obs'
+import { useConfig } from '../config'
 import { useLocalStorage } from 'usehooks-ts'
 import toast from 'react-hot-toast'
 
@@ -105,9 +106,18 @@ function comparePosition(position1: PTZPosition | undefined, position2: PTZPosit
 export function useInitPTZ(config: CameraPTZConfig) {
   const [connected, setConnected] = useState<boolean>(false)
   const [position, setPosition] = useState<PTZPosition | undefined>(undefined)
-  const [presetsHidden, setPresetsHidden] = useLocalStorage<string[]>(
-    `ptz-${config.id}-presets-hidden`,
-    []
+  const presetsHiddenAll = useConfig((state) => state.config.presetsHidden)
+  const setConfigStore = useConfig((state) => state.setConfig)
+  const presetsHidden = useMemo(
+    () => presetsHiddenAll[config.id] ?? [],
+    [presetsHiddenAll, config.id]
+  )
+  const setPresetsHidden: Dispatch<SetStateAction<string[]>> = useCallback(
+    (action) => {
+      const next = typeof action === 'function' ? action(presetsHidden) : action
+      setConfigStore({ presetsHidden: { ...presetsHiddenAll, [config.id]: next } })
+    },
+    [presetsHidden, presetsHiddenAll, config.id, setConfigStore]
   )
 
   useEffect(() => {
@@ -184,13 +194,17 @@ export function useInitPTZ(config: CameraPTZConfig) {
 }
 
 export function useClearHiddenPresets(config: CameraPTZConfig) {
-  const [hiddenPresets, setHiddenPresets] = useLocalStorage<string[]>(
-    `ptz-${config.id}-presets-hidden`,
-    []
+  const presetsHiddenAll = useConfig((state) => state.config.presetsHidden)
+  const setConfigStore = useConfig((state) => state.setConfig)
+  const hiddenPresets = useMemo(
+    () => presetsHiddenAll[config.id] ?? [],
+    [presetsHiddenAll, config.id]
   )
   const clearHiddenPresets = useCallback(() => {
-    setHiddenPresets([])
-  }, [setHiddenPresets])
+    const next = { ...presetsHiddenAll }
+    delete next[config.id]
+    setConfigStore({ presetsHidden: next })
+  }, [presetsHiddenAll, config.id, setConfigStore])
 
   return {
     hiddenPresets,

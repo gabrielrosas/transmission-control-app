@@ -1,7 +1,7 @@
 import { Subtitle } from './titles'
 import { Tag } from './Tag'
 import { OBSIcon } from './icons/obs'
-import { Webcam, Plus, Minus, Pencil, ArrowRight } from 'lucide-react'
+import { Webcam, Plus, Minus, Pencil, ArrowRight, EyeOff } from 'lucide-react'
 import type { ConfigSnapshot } from '@renderer/schemas/ConfigHistory'
 import type { OBSConfig } from '@renderer/schemas/OBSConfig'
 import type { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
@@ -103,6 +103,79 @@ function FieldRow({ label, from, to }: { label: string; from: string; to: string
   )
 }
 
+type AliasDiff =
+  | { key: string; kind: 'edited'; cameraName: string; presetId: string; from: string; to: string }
+  | { key: string; kind: 'added'; cameraName: string; presetId: string; to: string }
+  | { key: string; kind: 'removed'; cameraName: string; presetId: string; from: string }
+
+function findCameraForAliasKey(
+  key: string,
+  cameras: Record<string, CameraPTZConfig>
+): { camera: CameraPTZConfig; presetId: string } | null {
+  for (const [cameraId, camera] of Object.entries(cameras)) {
+    if (key.startsWith(cameraId + '-')) {
+      return { camera, presetId: key.slice(cameraId.length + 1) }
+    }
+  }
+  return null
+}
+
+function diffPresetsAlias(
+  current: Record<string, string>,
+  target: Record<string, string>,
+  cameras: Record<string, CameraPTZConfig>
+): AliasDiff[] {
+  const allKeys = Array.from(new Set([...Object.keys(current), ...Object.keys(target)]))
+  const result: AliasDiff[] = []
+  for (const key of allKeys) {
+    const a = current[key]
+    const b = target[key]
+    if (a === b) continue
+    const found = findCameraForAliasKey(key, cameras)
+    const cameraName = found?.camera.name || 'Câmera removida'
+    const presetId = found?.presetId || key
+    if (a !== undefined && b !== undefined) {
+      result.push({ key, kind: 'edited', cameraName, presetId, from: a, to: b })
+    } else if (b !== undefined) {
+      result.push({ key, kind: 'added', cameraName, presetId, to: b })
+    } else if (a !== undefined) {
+      result.push({ key, kind: 'removed', cameraName, presetId, from: a })
+    }
+  }
+  return result
+}
+
+type HiddenDiff = {
+  cameraId: string
+  cameraName: string
+  added: string[]
+  removed: string[]
+}
+
+function diffPresetsHidden(
+  current: Record<string, string[]>,
+  target: Record<string, string[]>,
+  cameras: Record<string, CameraPTZConfig>
+): HiddenDiff[] {
+  const cameraIds = Array.from(new Set([...Object.keys(current), ...Object.keys(target)]))
+  const result: HiddenDiff[] = []
+  for (const cameraId of cameraIds) {
+    const a = new Set(current[cameraId] ?? [])
+    const b = new Set(target[cameraId] ?? [])
+    const added = [...b].filter((x) => !a.has(x))
+    const removed = [...a].filter((x) => !b.has(x))
+    if (added.length === 0 && removed.length === 0) continue
+    const camera = cameras[cameraId]
+    result.push({
+      cameraId,
+      cameraName: camera?.name || 'Câmera removida',
+      added,
+      removed
+    })
+  }
+  return result
+}
+
 export function ConfigDiff({ current, target }: Props) {
   const obsDiff = diffOBS(current.obsConfig, target.obsConfig)
 
@@ -131,7 +204,24 @@ export function ConfigDiff({ current, target }: Props) {
     return []
   })
 
-  if (obsDiff.length === 0 && cameraEntries.length === 0) {
+  const allCameras = { ...target.cameraPTZConfig, ...current.cameraPTZConfig }
+  const aliasDiff = diffPresetsAlias(
+    current.presetsAlias || {},
+    target.presetsAlias || {},
+    allCameras
+  )
+  const hiddenDiff = diffPresetsHidden(
+    current.presetsHidden || {},
+    target.presetsHidden || {},
+    allCameras
+  )
+
+  if (
+    obsDiff.length === 0 &&
+    cameraEntries.length === 0 &&
+    aliasDiff.length === 0 &&
+    hiddenDiff.length === 0
+  ) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
         Nenhuma diferença — esta versão é igual à configuração atual.
@@ -172,6 +262,46 @@ export function ConfigDiff({ current, target }: Props) {
                   entry.diff.map((d) => (
                     <FieldRow key={d.key} label={d.label} from={d.from} to={d.to} />
                   ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {aliasDiff.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Subtitle icon={Pencil}>Aliases de presets</Subtitle>
+          <div className="flex flex-col gap-1 border border-border rounded p-2">
+            {aliasDiff.map((d) => (
+              <div key={d.key} className="flex flex-row items-center gap-2 text-xs py-1">
+                <div className="text-muted-foreground shrink-0">
+                  {d.cameraName} · preset {d.presetId}
+                </div>
+                <div className="grow" />
+                <div className="line-through opacity-60 truncate max-w-[120px]">
+                  {d.kind === 'added' ? '—' : d.from}
+                </div>
+                <ArrowRight className="size-3 opacity-50 shrink-0" />
+                <div className="truncate max-w-[120px]">{d.kind === 'removed' ? '—' : d.to}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hiddenDiff.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Subtitle icon={EyeOff}>Presets ocultos</Subtitle>
+          <div className="flex flex-col gap-2 border border-border rounded p-2">
+            {hiddenDiff.map((d) => (
+              <div key={d.cameraId} className="text-xs flex flex-col gap-0.5">
+                <div className="font-medium">{d.cameraName}</div>
+                {d.added.length > 0 && (
+                  <div className="opacity-70">Ocultar: {d.added.join(', ')}</div>
+                )}
+                {d.removed.length > 0 && (
+                  <div className="opacity-70">Mostrar: {d.removed.join(', ')}</div>
+                )}
               </div>
             ))}
           </div>

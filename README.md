@@ -112,11 +112,13 @@ The user config is a single Firestore document at `configs/<uid>` with this shap
     transitionTime?: number | null  // ms to wait for camera to settle
     presetLimit?: number | null
     positionRefreshTime?: boolean | null
-  }>
+  }>,
+  presetsAlias: Record<string, string>,        // "<cameraId>-<presetId>" → custom name
+  presetsHidden: Record<string, string[]>      // cameraId → hidden preset IDs
 }
 ```
 
-Local-only state (hidden presets, cached preset positions, aliases) is kept in `localStorage`.
+Cached preset positions (used to detect which preset is currently active) are kept in `localStorage` per device.
 
 Every save also appends an immutable snapshot to `configs_history/<uid>/versions/<autoId>`:
 

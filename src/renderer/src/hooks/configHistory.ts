@@ -35,10 +35,16 @@ async function fetchPage(userID: string, cursor: QueryDocumentSnapshot | null): 
   const snap = await getDocs(q)
   const versions: ConfigHistoryVersion[] = snap.docs.map((d) => {
     const data = d.data()
+    const rawConfig = (data.config ?? {}) as Partial<ConfigSnapshot>
     return {
       id: d.id,
       createdAt: (data.createdAt as Timestamp | null) ?? null,
-      config: data.config as ConfigSnapshot,
+      config: {
+        obsConfig: rawConfig.obsConfig ?? null,
+        cameraPTZConfig: rawConfig.cameraPTZConfig ?? {},
+        presetsAlias: rawConfig.presetsAlias ?? {},
+        presetsHidden: rawConfig.presetsHidden ?? {}
+      },
       restoredFromId: data.restoredFromId as string | undefined,
       restoredFromCreatedAt: (data.restoredFromCreatedAt as Timestamp | null) ?? undefined
     }

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import z from 'zod'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
-import { useLocalStorage } from 'usehooks-ts'
+import { useConfig } from '@renderer/hooks/config'
 import { Button } from '@renderer/components/Button'
 import { RotateCcw, Save } from 'lucide-react'
 
@@ -21,7 +21,8 @@ type DialogAliasData = {
 
 export function PTZManagerProvider({ children }: PTZManagerProps) {
   const [dialogAliasProps, setDialogAliasProps] = useState<DialogAliasData | null>(null)
-  const [alias, setAliasState] = useLocalStorage<Record<string, string>>('presets-alias', {})
+  const alias = useConfig((state) => state.config.presetsAlias)
+  const setConfig = useConfig((state) => state.setConfig)
   const showModalAlias = useCallback(
     (config: CameraPTZConfig, preset: PTZPreset) => {
       setDialogAliasProps({
@@ -33,23 +34,21 @@ export function PTZManagerProvider({ children }: PTZManagerProps) {
   )
 
   const setAlias = useCallback(
-    (key: string, value: string) => {
-      setAliasState((prev) => ({ ...prev, [key]: value }))
+    async (key: string, value: string) => {
       setDialogAliasProps(null)
+      await setConfig({ presetsAlias: { ...alias, [key]: value } })
     },
-    [setAliasState, setDialogAliasProps]
+    [setConfig, alias]
   )
 
   const deleteAlias = useCallback(
-    (key: string) => {
-      setAliasState((prev) => {
-        const newState = { ...prev }
-        delete newState[key]
-        return newState
-      })
+    async (key: string) => {
       setDialogAliasProps(null)
+      const next = { ...alias }
+      delete next[key]
+      await setConfig({ presetsAlias: next })
     },
-    [setAliasState, setDialogAliasProps]
+    [setConfig, alias]
   )
   return (
     <PTZManagerContext.Provider
