@@ -14,6 +14,7 @@ import icon from '../../resources/icon.png?asset'
 
 import { loadIPCCameraPTZ } from './Cam'
 import { loadIPCImageCache } from './ImageCache'
+import { loadIPCOverlays } from './Overlays'
 
 function createWindow() {
   const width = 400
@@ -115,6 +116,8 @@ app.whenReady().then(() => {
   loadIPCCameraPTZ(ipcMain)
 
   loadIPCImageCache(ipcMain, app)
+
+  loadIPCOverlays(ipcMain)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

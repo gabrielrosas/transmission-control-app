@@ -43,7 +43,8 @@ async function fetchPage(userID: string, cursor: QueryDocumentSnapshot | null): 
         obsConfig: rawConfig.obsConfig ?? null,
         cameraPTZConfig: rawConfig.cameraPTZConfig ?? {},
         presetsAlias: rawConfig.presetsAlias ?? {},
-        presetsHidden: rawConfig.presetsHidden ?? {}
+        presetsHidden: rawConfig.presetsHidden ?? {},
+        overlayerControls: rawConfig.overlayerControls ?? {}
       },
       restoredFromId: data.restoredFromId as string | undefined,
       restoredFromCreatedAt: (data.restoredFromCreatedAt as Timestamp | null) ?? undefined

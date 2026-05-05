@@ -12,18 +12,21 @@ import { useEffect } from 'react'
 import { db, useAuth } from './firebase'
 import { create } from 'zustand'
 import { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
+import { OverlayerControl } from '@renderer/schemas/OverlayerControl'
 
 interface Config {
   obsConfig: OBSConfig | null
   cameraPTZConfig: Record<string, CameraPTZConfig>
   presetsAlias: Record<string, string>
   presetsHidden: Record<string, string[]>
+  overlayerControls: Record<string, OverlayerControl>
 }
 const initialConfig: Config = {
   obsConfig: null,
   cameraPTZConfig: {},
   presetsAlias: {},
-  presetsHidden: {}
+  presetsHidden: {},
+  overlayerControls: {}
 }
 
 type SetConfigOptions = {

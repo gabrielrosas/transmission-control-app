@@ -54,10 +54,11 @@ Path alias: `@renderer` → `src/renderer/src` (configured in [electron.vite.con
 [src/main/index.ts](src/main/index.ts:18) creates a fixed-width 400px window pinned to the right edge of the primary display, at full work-area height. It is meant to sit alongside OBS, not on top of it. Hardware acceleration is disabled (`app.disableHardwareAcceleration()`).
 
 ### IPC surface
-Three preload bridges, all in [src/preload/index.ts](src/preload/index.ts):
+Four preload bridges, all in [src/preload/index.ts](src/preload/index.ts):
 - `window.ptz`: `init`, `getPresets`, `goto`, `getPosition`, `onConnected`, `onLogs`
 - `window.clipboard`: `writeText`
 - `window.imageCache`: `save`, `get`, `clear`, `clearFolder` — files written to `app.getPath('userData')/images/<folder>/<filename>.cache`
+- `window.overlays`: `put({ apiUrl, payload })` — proxies an HTTP PUT to the overlays.uno (Singular) API from the main process; avoids CORS issues that block direct fetch from the renderer
 
 When you change the IPC surface, update **all three**: the handler in `main/`, the preload definition, and the typings in [src/preload/index.d.ts](src/preload/index.d.ts).
 
@@ -142,6 +143,37 @@ Trade-off: the snapshot stays tamper-proof (the audit-trail use case), but the h
 UI: when a name is set, it replaces the timestamp on the row's primary line; the timestamp moves to a small subtitle below. The history page renders two sections — first a "Versões nomeadas" section showing only the entries that have a name (sourced from the `names` doc), then "Todas as versões" showing the full chronological list. A named version appears in BOTH sections; an unnamed version appears only in the chronological list. Each row in either section gets the same actions (rename, download, restore) and the "Atual" tag is rendered on whichever rows correspond to the latest version.
 
 Caveat with pagination: the named-versions section is built from the in-memory `versions` array (i.e. the loaded pages). If a user has named a version that lives outside the loaded pages, it won't appear in the named-versions section until they hit "Carregar mais" enough times to load that page. For the typical scale (small number of named entries, recent ones at the top) this is fine; if it becomes a problem, fetch named versions individually by id from `configs_history_names`.
+
+### Overlayer controls (overlays.uno integration)
+The app drives external [overlays.uno](https://overlays.uno/) overlays as a control panel. No custom web overlay page is hosted — the visual layer stays in overlays.uno; this app only fires API calls.
+
+API reference: official Singular/UNO command list (ShowOverlay, HideOverlay, GetOverlays, GetOverlayContent, TakeOverlaySlotName, etc.). The doc is reachable via the `?` → "API Description" menu inside any overlay on overlays.uno; if you need it, paste the relevant excerpt into the conversation rather than committing it to the repo.
+
+Config field: `overlayerControls: Record<string, OverlayerControl>` where each is just `{ id, name, url }`. The list of items inside an overlay is **fetched at runtime** via the `GetOverlays` command — items are NOT persisted in Firestore (the source of truth is the user's overlays.uno setup).
+
+Helpers in [src/renderer/src/schemas/OverlayerControl.ts](src/renderer/src/schemas/OverlayerControl.ts): `parseOverlayUnoControlUrl`, `apiUrlFromAppId`, `apiUrlFromControlUrl` derive the API endpoint `https://app.overlays.uno/apiv2/controlapps/{appId}/api`.
+
+API call goes through `window.overlays.put({ apiUrl, payload })` — handled in [src/main/Overlays.ts](src/main/Overlays.ts) which does `fetch(apiUrl, { method: 'PUT', body: JSON.stringify(payload) })` from the main process. The endpoint is **not GET-based** — it's RPC over PUT, with the operation in the `command` field. Calling from the renderer would hit CORS.
+
+Payloads (Uno App API):
+- Show: `{ command: 'ShowOverlay', id: '<overlayId>' }`
+- Hide: `{ command: 'HideOverlay', id: '<overlayId>' }`
+- Enumerate: `{ command: 'GetOverlays' }` → returns the list of overlay items (the response shape isn't pinned in the doc, so the renderer parser is defensive — see `parseOverlaysResponse` in [hooks/overlayerControls.ts](src/renderer/src/hooks/overlayerControls.ts))
+
+Hooks in [src/renderer/src/hooks/overlayerControls.ts](src/renderer/src/hooks/overlayerControls.ts):
+- `useOverlayerControls()` — selector pro `config.overlayerControls`
+- `useOverlayItems(control)` — TanStack `useQuery` que faz `GetOverlays` e parseia o response. `staleTime: 30s`, retry 1.
+- `usePlayingItems()` — zustand local com `Record<controlId, itemId | null>`. Não vai pro Firestore (runtime, não merece histórico)
+- `usePlayItem()` — mutation: stops the previously-playing item in the same control if any, then plays the new one. **One item per control may be playing at a time.**
+- `useStopItem()` — mutation: stops the currently-playing item in the control
+
+UI:
+- Settings: [routes/settings/overlayers.tsx](src/renderer/src/routes/settings/overlayers.tsx) — list + add + edit + delete controls (just name + URL; nothing about items here since they live in overlays.uno)
+- Home: [routes/home/overlayers.tsx](src/renderer/src/routes/home/overlayers.tsx) — accordion card per control. Items are auto-listed via `useOverlayItems`; loading/error/empty states; no item creation UI (the user manages items inside overlays.uno itself). When collapsed AND an item is playing, the header shows the item name plus a small Stop button.
+
+Two state caveats:
+- **What's playing** is local to the app session — there's no WebSocket back from overlays.uno. Restarting the app forgets which item was on-air. The Singular API has a `GetOverlayVisibility` command that could be polled if real sync becomes important.
+- **The `GetOverlays` response shape isn't fully pinned** in the doc — the parser tries `Array<{id,name}>`, then `{overlays: ...}`, `{items: ...}`, `{data: ...}`, then throws with the raw JSON in the error message. If a user's overlay returns something different, surface that error and update the parser.
 
 ### Manual snapshot (Criar versão agora)
 [`useCreateVersionNow`](src/renderer/src/hooks/configHistory.ts) is a no-op `setConfig({})` wrapped in `toast.promise` — writes the current config back to `configs/<uid>` and creates a new history entry that's identical to the previous one. Used as a marker / checkpoint when the user wants to bookmark the current state without making an actual config change. The button sits at the top of the history page.

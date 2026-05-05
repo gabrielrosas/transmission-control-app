@@ -8,6 +8,7 @@ Built with Electron, React 19, TypeScript and Tailwind. UI language is Portugues
 
 - **PTZ control over ONVIF** — connect to multiple PTZ cameras, list their presets, and recall them with one click. Presets can be hidden, renamed (local alias), and tagged with a preview thumbnail.
 - **OBS scene switching** — preview / program scene swaps, live reflection of OBS-side changes (program, preview, scene list).
+- **overlays.uno control** — register one or more overlays.uno control URLs; each appears as an accordion on the home screen. Items inside the overlay are fetched live via the `GetOverlays` API call, with a play/stop per item. When the accordion is collapsed and an item is on-air, the header shows what's playing with a quick stop button.
 - **PTZ ↔ OBS integration** — recalling a preset can automatically:
   - swap Program to an auxiliary scene to mask the camera moving,
   - move the camera,
@@ -115,7 +116,13 @@ The user config is a single Firestore document at `configs/<uid>` with this shap
     positionRefreshTime?: boolean | null
   }>,
   presetsAlias: Record<string, string>,        // "<cameraId>-<presetId>" → custom name
-  presetsHidden: Record<string, string[]>      // cameraId → hidden preset IDs
+  presetsHidden: Record<string, string[]>,     // cameraId → hidden preset IDs
+  overlayerControls: Record<string, {
+    id: string
+    name: string
+    url: string                                // https://app.overlays.uno/control/{appId}
+  }>
+  // items inside each overlay are fetched live via GetOverlays — not persisted
 }
 ```
 

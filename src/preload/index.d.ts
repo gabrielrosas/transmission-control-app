@@ -55,5 +55,8 @@ declare global {
       }) => Promise<string | undefined>
       clearFolder: ({ folder }: { folder: string }) => Promise<boolean>
     }
+    overlays: {
+      put: ({ apiUrl, payload }: { apiUrl: string; payload: unknown }) => Promise<unknown>
+    }
   }
 }

@@ -2,12 +2,13 @@ import { useConfig } from '@renderer/hooks/config'
 import { Box } from '../../components/Box'
 import { ObsCard } from './obs'
 import { PtzCard } from './ptz'
+import { OverlayerCard } from './overlayers'
 import { useState } from 'react'
 import { PTZManagerProvider } from '@renderer/hooks/ptz/Manager'
-// import { OverlayersCard } from './overlayers'
 
 export function HomePage() {
   const cameraPTZConfig = useConfig((state) => state.config.cameraPTZConfig)
+  const overlayerControls = useConfig((state) => state.config.overlayerControls)
   const [selected, setSelected] = useState<string | null>(Object.keys(cameraPTZConfig)[0] || null)
   return (
     <Box direction="column" gap="small" className="h-full" align="start">
@@ -20,10 +21,14 @@ export function HomePage() {
             changeColapsed={() => setSelected(selected === camera.id ? null : camera.id)}
           />
         ))}
-        {/* <OverlayersCard
-          selected={selected === 'overlayers'}
-          changeColapsed={() => setSelected(selected === 'overlayers' ? null : 'overlayers')}
-        /> */}
+        {Object.values(overlayerControls).map((control) => (
+          <OverlayerCard
+            key={control.id}
+            control={control}
+            selected={selected === control.id}
+            changeColapsed={() => setSelected(selected === control.id ? null : control.id)}
+          />
+        ))}
       </PTZManagerProvider>
       <ObsCard />
     </Box>

@@ -1,10 +1,11 @@
 import { Subtitle } from './titles'
 import { Tag } from './Tag'
 import { OBSIcon } from './icons/obs'
-import { Webcam, Plus, Minus, Pencil, ArrowRight, EyeOff } from 'lucide-react'
+import { Webcam, Plus, Minus, Pencil, ArrowRight, EyeOff, Layers } from 'lucide-react'
 import type { ConfigSnapshot } from '@renderer/schemas/ConfigHistory'
 import type { OBSConfig } from '@renderer/schemas/OBSConfig'
 import type { CameraPTZConfig } from '@renderer/schemas/CameraPTZ'
+import type { OverlayerControl } from '@renderer/schemas/OverlayerControl'
 
 type Props = {
   current: ConfigSnapshot
@@ -176,6 +177,58 @@ function diffPresetsHidden(
   return result
 }
 
+const OVERLAYER_FIELD_LABELS: Record<'name' | 'url', string> = {
+  name: 'Nome',
+  url: 'URL'
+}
+
+type OverlayerEntry =
+  | { id: string; kind: 'added'; control: OverlayerControl }
+  | { id: string; kind: 'removed'; control: OverlayerControl }
+  | {
+      id: string
+      kind: 'edited'
+      control: OverlayerControl
+      fields: FieldDiff[]
+    }
+
+function diffOverlayerControls(
+  current: Record<string, OverlayerControl>,
+  target: Record<string, OverlayerControl>
+): OverlayerEntry[] {
+  const ids = Array.from(new Set([...Object.keys(current), ...Object.keys(target)]))
+  const result: OverlayerEntry[] = []
+  for (const id of ids) {
+    const a = current[id]
+    const b = target[id]
+    if (a && !b) result.push({ id, kind: 'removed', control: a })
+    else if (!a && b) result.push({ id, kind: 'added', control: b })
+    else if (a && b) {
+      const fields: FieldDiff[] = []
+      if (a.name !== b.name) {
+        fields.push({
+          key: 'name',
+          label: OVERLAYER_FIELD_LABELS.name,
+          from: a.name || '—',
+          to: b.name || '—'
+        })
+      }
+      if (a.url !== b.url) {
+        fields.push({
+          key: 'url',
+          label: OVERLAYER_FIELD_LABELS.url,
+          from: a.url || '—',
+          to: b.url || '—'
+        })
+      }
+      if (fields.length > 0) {
+        result.push({ id, kind: 'edited', control: b, fields })
+      }
+    }
+  }
+  return result
+}
+
 export function ConfigDiff({ current, target }: Props) {
   const obsDiff = diffOBS(current.obsConfig, target.obsConfig)
 
@@ -215,12 +268,17 @@ export function ConfigDiff({ current, target }: Props) {
     target.presetsHidden || {},
     allCameras
   )
+  const overlayerDiff = diffOverlayerControls(
+    current.overlayerControls || {},
+    target.overlayerControls || {}
+  )
 
   if (
     obsDiff.length === 0 &&
     cameraEntries.length === 0 &&
     aliasDiff.length === 0 &&
-    hiddenDiff.length === 0
+    hiddenDiff.length === 0 &&
+    overlayerDiff.length === 0
   ) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
@@ -302,6 +360,32 @@ export function ConfigDiff({ current, target }: Props) {
                 {d.removed.length > 0 && (
                   <div className="opacity-70">Mostrar: {d.removed.join(', ')}</div>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {overlayerDiff.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <Subtitle icon={Layers}>Controles de overlayer</Subtitle>
+          <div className="flex flex-col gap-2">
+            {overlayerDiff.map((entry) => (
+              <div key={entry.id} className="border border-border rounded p-2">
+                <div className="flex flex-row items-center gap-2 mb-1">
+                  <div className="text-sm font-medium grow">{entry.control.name || 'Sem nome'}</div>
+                  {entry.kind === 'added' && (
+                    <Tag label="Adicionado" icon={Plus} variant="success" />
+                  )}
+                  {entry.kind === 'removed' && (
+                    <Tag label="Removido" icon={Minus} variant="error" />
+                  )}
+                  {entry.kind === 'edited' && <Tag label="Editado" icon={Pencil} />}
+                </div>
+                {entry.kind === 'edited' &&
+                  entry.fields.map((d) => (
+                    <FieldRow key={d.key} label={d.label} from={d.from} to={d.to} />
+                  ))}
               </div>
             ))}
           </div>

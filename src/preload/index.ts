@@ -41,6 +41,11 @@ const imageCache = {
   clearFolder: (props: { folder: string }) => ipcRenderer.invoke('imageCache:clearFolder', props)
 }
 
+const overlays = {
+  put: (props: { apiUrl: string; payload: unknown }) =>
+    ipcRenderer.invoke('overlays:put', props) as Promise<unknown>
+}
+
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
@@ -50,6 +55,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('ptz', ptz)
     contextBridge.exposeInMainWorld('clipboard', clipboard)
     contextBridge.exposeInMainWorld('imageCache', imageCache)
+    contextBridge.exposeInMainWorld('overlays', overlays)
   } catch (error) {
     console.error(error)
   }
@@ -62,4 +68,6 @@ if (process.contextIsolated) {
   window.clipboard = clipboard
   // @ts-ignore (define in dts)
   window.imageCache = imageCache
+  // @ts-ignore (define in dts)
+  window.overlays = overlays
 }
