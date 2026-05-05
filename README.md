@@ -17,6 +17,8 @@ Built with Electron, React 19, TypeScript and Tailwind. UI language is Portugues
 - **Preset position cache** — remembers where the camera physically ended up for each preset, so the UI can highlight which preset matches the current pan/tilt/zoom.
 - **Per-user config sync via Firebase** — sign in with email/password; camera and OBS configurations sync to Firestore and follow you across machines.
 - **Config history with one-click restore** — every config save writes an immutable version to Firestore. The history screen lets you preview the diff between any past version and the current state, then restore — which itself is recorded as a new entry, so the timeline only ever moves forward.
+- **Export / import config as JSON** — every history entry can be downloaded as a versioned JSON file (offline backup). Importing a file shows a diff preview and creates a new history entry on confirm.
+- **Name your versions** — give any history entry a human label ("Pre-show 2026-05-04"). Names live in a separate mutable Firestore collection so the underlying snapshot stays tamper-proof.
 - **Mock PTZ mode** for development without real hardware (`PTZ_CAM_DEV=true`).
 
 ## Tech stack
@@ -127,13 +129,23 @@ Every save also appends an immutable snapshot to `configs_history/<uid>/versions
 }
 ```
 
-Apply these Firestore security rules to keep the history truly write-once:
+User-provided names for versions live in a separate, mutable doc at `configs_history_names/<uid>`:
+
+```ts
+{ [versionId]: "Pre-show 2026-05-04", ... }
+```
+
+Apply these Firestore security rules to keep the history truly write-once while still allowing names to be edited:
 
 ```
 match /configs_history/{uid}/versions/{versionId} {
   allow read:   if request.auth != null && request.auth.uid == uid;
   allow create: if request.auth != null && request.auth.uid == uid;
   allow update, delete: if false;
+}
+
+match /configs_history_names/{uid} {
+  allow read, write: if request.auth != null && request.auth.uid == uid;
 }
 ```
 

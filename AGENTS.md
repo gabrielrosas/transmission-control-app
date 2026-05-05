@@ -98,6 +98,14 @@ Read path: [`useConfigHistory`](src/renderer/src/hooks/configHistory.ts) wraps `
 
 Restore path: [`useRestoreVersion`](src/renderer/src/hooks/configHistory.ts) is a `useMutation` that calls `setConfig(version.config, { restoredFromId, restoredFromCreatedAt })` — i.e. restores by **writing forward**. The history is never rewound; a restore appends a new version tagged with the source id. UI lives in [routes/settings/history.tsx](src/renderer/src/routes/settings/history.tsx) and uses [components/ConfigDiff.tsx](src/renderer/src/components/ConfigDiff.tsx) inside a `Dialog` to preview before applying.
 
+### Config export / import
+The history page also lets the user export any version as a JSON file and import a JSON file as a new version. Helpers live in [src/renderer/src/libs/configFile.ts](src/renderer/src/libs/configFile.ts):
+- `downloadConfigFile(config, filename)` — wraps the snapshot in `{ version, exportedAt, config }`, blob-downloads it.
+- `parseConfigFile(text)` — JSON.parse + Zod validates against `ExportedFileSchema`, returns the inner `ConfigSnapshot`. Rejects unknown `version` numbers with a friendly message.
+- `EXPORT_FORMAT_VERSION` (currently `1`) — bump this if you change the snapshot shape in a non-backwards-compatible way; the parser will refuse old files instead of silently corrupting state.
+
+Import goes through [`useImportConfig`](src/renderer/src/hooks/configHistory.ts), which is just `setConfig(snapshot)` wrapped in `toast.promise` and a query invalidation — i.e. an imported file always becomes the latest history version (no special marker). The history page shows the same `ConfigDiff` preview before committing, so a malformed-but-validated file is still reviewable.
+
 **Immutability** is enforced by Firestore security rules — apply this in the Firebase Console (the rules file is not in the repo):
 ```
 match /configs_history/{uid}/versions/{versionId} {
@@ -107,6 +115,25 @@ match /configs_history/{uid}/versions/{versionId} {
 }
 ```
 Without these rules, the immutability is only a UI convention. With them, the client can never edit or delete a version.
+
+### Version names (mutable, separate from history)
+Users can label any version with a custom name (e.g. "Pré-culto domingo"). Names are **deliberately not part of the immutable history** — they live in a separate, mutable doc:
+
+```
+configs_history_names/{uid}: { [versionId]: name, ... }
+```
+
+```
+match /configs_history_names/{uid} {
+  allow read, write: if request.auth != null && request.auth.uid == uid;
+}
+```
+
+Trade-off: the snapshot stays tamper-proof (the audit-trail use case), but the human label can be renamed/deleted (the UX use case). Same idea as git: commit hash is immutable, tag pointing to it isn't. Hooks in [hooks/configHistory.ts](src/renderer/src/hooks/configHistory.ts):
+- `useConfigVersionNames()` — onSnapshot listener, returns `Record<versionId, name>`.
+- `useSetVersionName()` — mutation with `{ versionId, name }` — `name=null` deletes the entry via `deleteField()`.
+
+UI: when a name is set, it replaces the timestamp on the row's primary line; the timestamp moves to a small subtitle below.
 
 ### Schemas
 All persisted shapes are Zod-validated:

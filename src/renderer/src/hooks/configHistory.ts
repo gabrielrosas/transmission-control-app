@@ -1,14 +1,20 @@
 import {
   collection,
+  deleteField,
+  doc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   QueryDocumentSnapshot,
+  setDoc,
   startAfter,
-  Timestamp
+  Timestamp,
+  updateDoc
 } from 'firebase/firestore'
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { db } from './firebase'
 import { useConfig } from './config'
@@ -86,6 +92,60 @@ export function useRestoreVersion() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configHistory'] })
+    }
+  })
+}
+
+export function useImportConfig() {
+  const setConfig = useConfig((state) => state.setConfig)
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (config: ConfigSnapshot) => {
+      await toast.promise(setConfig(config), {
+        loading: 'Importando configuração...',
+        success: 'Configuração importada com sucesso!',
+        error: 'Erro ao importar configuração'
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['configHistory'] })
+    }
+  })
+}
+
+export function useConfigVersionNames(): Record<string, string> {
+  const userID = useConfig((state) => state.userID)
+  const [names, setNames] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!userID) {
+      setNames({})
+      return
+    }
+    const unsub = onSnapshot(doc(db, 'configs_history_names', userID), (snap) => {
+      setNames((snap.data() as Record<string, string> | undefined) || {})
+    })
+    return () => unsub()
+  }, [userID])
+
+  return names
+}
+
+export function useSetVersionName() {
+  const userID = useConfig((state) => state.userID)
+  return useMutation({
+    mutationFn: async ({ versionId, name }: { versionId: string; name: string | null }) => {
+      if (!userID) throw new Error('Not authenticated')
+      const ref = doc(db, 'configs_history_names', userID)
+      const trimmed = name?.trim()
+      if (trimmed) {
+        await setDoc(ref, { [versionId]: trimmed }, { merge: true })
+      } else {
+        await updateDoc(ref, { [versionId]: deleteField() }).catch(() => {
+          // doc didn't exist; field is already absent
+        })
+      }
     }
   })
 }
